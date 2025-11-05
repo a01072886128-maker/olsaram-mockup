@@ -1,486 +1,309 @@
-/**
- * 예약 관리 페이지
- *
- * 모든 예약을 한눈에 확인하고 관리
- * - 날짜/상태 필터
- * - 예약 승인/거절
- * - 문자 발송
- * - 대기자 관리
- */
-
-import { useState } from 'react';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Avatar, AvatarFallback } from '../../components/ui/avatar';
+import { Separator } from '../../components/ui/separator';
 import {
   Calendar,
   Clock,
   Users,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
+  Phone,
   MessageSquare,
-  Eye,
-  CreditCard,
-  RefreshCw
+  MapPin,
+  DollarSign,
+  FileText
 } from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import Toast from '../../components/Toast';
 
-const Reservations = () => {
-  const [dateFilter, setDateFilter] = useState('today');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedReservation, setSelectedReservation] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+const mockDetailedReservations = [
+  {
+    id: 1,
+    customerName: '김민수',
+    customerInitial: '김',
+    phone: '010-1234-5678',
+    date: '2025-11-05',
+    time: '18:00',
+    partySize: 4,
+    status: 'confirmed',
+    statusText: '확정',
+    trustScore: 95,
+    trustLevel: '플래티넘',
+    visitCount: 12,
+    menu: '짜장면 2, 짬뽕 2',
+    totalAmount: 34000,
+    specialRequest: '아이 의자 필요합니다',
+    tableNumber: '3번 테이블',
+  },
+  {
+    id: 2,
+    customerName: '이지현',
+    customerInitial: '이',
+    phone: '010-2345-6789',
+    date: '2025-11-05',
+    time: '19:00',
+    partySize: 2,
+    status: 'confirmed',
+    statusText: '확정',
+    trustScore: 88,
+    trustLevel: '골드',
+    visitCount: 5,
+    menu: '탕수육(소) 1',
+    totalAmount: 15000,
+    specialRequest: '없음',
+    tableNumber: '7번 테이블',
+  },
+  {
+    id: 3,
+    customerName: '박준호',
+    customerInitial: '박',
+    phone: '010-3456-7890',
+    date: '2025-11-05',
+    time: '19:30',
+    partySize: 6,
+    status: 'pending',
+    statusText: '대기중',
+    trustScore: 72,
+    trustLevel: '실버',
+    visitCount: 2,
+    menu: '사전 주문 없음',
+    totalAmount: 0,
+    specialRequest: '없음',
+    tableNumber: '미배정',
+  },
+];
 
-  // 더미 데이터
-  const mockReservations = [
-    {
-      id: 1,
-      customer: {
-        name: "김민수",
-        trustLevel: "단골",
-        stars: 5,
-        totalVisits: 18,
-        noShowCount: 0
-      },
-      date: "2025-11-05",
-      time: "19:00",
-      partySize: 4,
-      status: "confirmed",
-      cardRegistered: true,
-      depositAmount: 0,
-      menu: "런치 세트 A"
-    },
-    {
-      id: 2,
-      customer: {
-        name: "이지현",
-        trustLevel: "새싹",
-        stars: 1,
-        totalVisits: 0,
-        noShowCount: 0,
-        isNewCustomer: true
-      },
-      date: "2025-11-05",
-      time: "19:30",
-      partySize: 2,
-      status: "pending",
-      cardRegistered: true,
-      depositAmount: 0,
-      menu: "디너 코스 B"
-    },
-    {
-      id: 3,
-      customer: {
-        name: "박준호",
-        trustLevel: "손님",
-        stars: 3,
-        totalVisits: 5,
-        noShowCount: 1
-      },
-      date: "2025-11-05",
-      time: "20:00",
-      partySize: 6,
-      status: "cancelled",
-      cancelledAt: "1시간 전",
-      cardRegistered: true,
-      waitlistNotified: true,
-      waitlistCount: 3,
-      menu: "특선 코스"
-    },
-    {
-      id: 4,
-      customer: {
-        name: "최수진",
-        trustLevel: "단골",
-        stars: 5,
-        totalVisits: 12,
-        noShowCount: 0
-      },
-      date: "2025-11-05",
-      time: "18:00",
-      partySize: 3,
-      status: "confirmed",
-      cardRegistered: true,
-      depositAmount: 0,
-      menu: "일반 메뉴"
-    }
-  ];
-
-  // 필터링된 예약 목록
-  const filteredReservations = mockReservations.filter(reservation => {
-    if (statusFilter !== 'all' && reservation.status !== statusFilter) {
-      return false;
-    }
-    return true;
-  });
-
-  // 신뢰 등급별 색상
-  const trustLevelColors = {
-    '단골': 'text-yellow-500',
-    '손님': 'text-primary-green',
-    '새싹': 'text-light-green'
-  };
-
-  // 상태별 스타일
-  const statusStyles = {
-    confirmed: {
-      icon: <CheckCircle size={20} className="text-primary-green" />,
-      text: '확정',
-      textColor: 'text-primary-green',
-      bg: 'bg-green-50'
-    },
-    pending: {
-      icon: <AlertCircle size={20} className="text-yellow-600" />,
-      text: '대기 중',
-      textColor: 'text-yellow-600',
-      bg: 'bg-yellow-50'
-    },
-    cancelled: {
-      icon: <XCircle size={20} className="text-red-500" />,
-      text: '취소됨',
-      textColor: 'text-red-500',
-      bg: 'bg-red-50'
-    },
-    noshow: {
-      icon: <XCircle size={20} className="text-gray-500" />,
-      text: '노쇼',
-      textColor: 'text-gray-500',
-      bg: 'bg-gray-50'
-    }
-  };
-
-  // 예약 승인
-  const handleApprove = (reservation) => {
-    setToast({
-      show: true,
-      message: `${reservation.customer.name}님의 예약이 승인되었습니다.`,
-      type: 'success'
-    });
-  };
-
-  // 예약 거절
-  const handleReject = (reservation) => {
-    setToast({
-      show: true,
-      message: `${reservation.customer.name}님의 예약이 거절되었습니다.`,
-      type: 'info'
-    });
-  };
-
-  // 문자 발송
-  const handleSendMessage = (reservation) => {
-    setToast({
-      show: true,
-      message: `${reservation.customer.name}님께 문자가 발송되었습니다.`,
-      type: 'success'
-    });
-  };
-
-  // 상세보기
-  const handleShowDetail = (reservation) => {
-    setSelectedReservation(reservation);
-    setShowDetailModal(true);
-  };
-
+function Reservations() {
   return (
-    <div className="min-h-screen bg-bg-main">
-      <Navbar userType="owner" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-green to-primary-purple rounded-lg flex items-center justify-center mr-4">
-              <Calendar className="text-white" size={28} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-text-primary">
-                📅 예약 현황
-              </h1>
-              <p className="text-text-secondary mt-1">
-                모든 예약을 한눈에 확인하고 관리하세요
-              </p>
-            </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header - 프로페셔널 스타일 */}
+      <header className="bg-white border-b sticky top-0 z-50">
+        <div className="container mx-auto px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-12">
+            <a href="/" className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">
+              올사람
+            </a>
+            <nav className="hidden md:flex gap-10">
+              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                대시보드
+              </a>
+              <a className="text-base text-slate-900 font-semibold border-b-2 border-blue-600 pb-[26px] cursor-pointer">
+                예약 관리
+              </a>
+              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                사기 탐지
+              </a>
+              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                메뉴 관리
+              </a>
+            </nav>
           </div>
-
-          {/* 필터 */}
-          <Card>
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* 날짜 필터 */}
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-text-primary mb-2">날짜</p>
-                <div className="flex gap-2">
-                  {['today', 'week', 'month', 'all'].map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setDateFilter(filter)}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                        dateFilter === filter
-                          ? 'bg-primary-green text-white'
-                          : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
-                      }`}
-                    >
-                      {filter === 'today' && '오늘'}
-                      {filter === 'week' && '이번주'}
-                      {filter === 'month' && '이번달'}
-                      {filter === 'all' && '전체'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 상태 필터 */}
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-text-primary mb-2">상태</p>
-                <div className="flex gap-2">
-                  {['all', 'confirmed', 'pending', 'cancelled'].map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setStatusFilter(filter)}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                        statusFilter === filter
-                          ? 'bg-primary-purple text-white'
-                          : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
-                      }`}
-                    >
-                      {filter === 'all' && '전체'}
-                      {filter === 'confirmed' && '확정'}
-                      {filter === 'pending' && '대기'}
-                      {filter === 'cancelled' && '취소'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" className="text-slate-700 text-base">
+              <MessageSquare className="w-5 h-5 mr-2" />
+              알림
+            </Button>
+            <Button variant="ghost" className="text-base">
+              홍대 중국집
+            </Button>
+          </div>
         </div>
+      </header>
 
-        {/* 예약 목록 */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-text-primary">
-              예약 목록 ({filteredReservations.length}건)
+      <main className="container mx-auto px-8 py-10">
+        {/* 타이틀 섹션 - 이모지 제거 */}
+        <div className="mb-10 flex items-start justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">
+              예약 관리
             </h2>
+            <p className="text-lg text-slate-600">
+              오늘의 예약을 확인하고 관리하세요
+            </p>
           </div>
-
-          {filteredReservations.map((reservation) => (
-            <Card key={reservation.id} hover className={statusStyles[reservation.status].bg}>
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="flex-1">
-                  {/* 고객 정보 */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <Users className="text-primary-green" size={24} />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-text-primary">
-                          {reservation.customer.name}
-                        </span>
-                        <span className={`text-sm ${trustLevelColors[reservation.customer.trustLevel]}`}>
-                          {reservation.customer.trustLevel} {'⭐'.repeat(reservation.customer.stars)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-text-secondary">
-                        {reservation.customer.isNewCustomer ? (
-                          '신규 고객 (첫 방문) 🌱'
-                        ) : (
-                          `총 ${reservation.customer.totalVisits}회 방문, 노쇼 ${reservation.customer.noShowCount}회`
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 예약 정보 */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                    <div className="flex items-center text-sm text-text-secondary">
-                      <Clock size={16} className="mr-2" />
-                      {reservation.time}
-                    </div>
-                    <div className="flex items-center text-sm text-text-secondary">
-                      <Users size={16} className="mr-2" />
-                      {reservation.partySize}명
-                    </div>
-                    <div className="flex items-center text-sm text-text-secondary">
-                      <CreditCard size={16} className="mr-2" />
-                      {reservation.cardRegistered ? '카드 등록 완료' : '미등록'}
-                    </div>
-                    <div className="flex items-center text-sm font-semibold">
-                      {statusStyles[reservation.status].icon}
-                      <span className={`ml-2 ${statusStyles[reservation.status].textColor}`}>
-                        {statusStyles[reservation.status].text}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 메뉴 */}
-                  <div className="bg-white rounded-lg p-3 mb-3">
-                    <p className="text-sm text-text-secondary">
-                      메뉴: {reservation.menu}
-                    </p>
-                  </div>
-
-                  {/* 취소 시 대기자 정보 */}
-                  {reservation.status === 'cancelled' && reservation.waitlistNotified && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-center">
-                        <RefreshCw className="text-primary-purple mr-2" size={18} />
-                        <span className="text-sm font-semibold text-primary-purple">
-                          대기자 매칭: 자동 알림 발송됨 ({reservation.waitlistCount}명 대기 중)
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 액션 버튼 */}
-                <div className="flex flex-col gap-2 md:min-w-[150px]">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleShowDetail(reservation)}
-                    className="w-full"
-                  >
-                    <Eye size={16} className="mr-1" />
-                    예약 상세
-                  </Button>
-
-                  {reservation.status === 'pending' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprove(reservation)}
-                        className="w-full"
-                      >
-                        <CheckCircle size={16} className="mr-1" />
-                        승인
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="w-full bg-red-500 hover:bg-red-600"
-                        onClick={() => handleReject(reservation)}
-                      >
-                        <XCircle size={16} className="mr-1" />
-                        거절
-                      </Button>
-                    </>
-                  )}
-
-                  {reservation.status === 'confirmed' && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleSendMessage(reservation)}
-                      className="w-full"
-                    >
-                      <MessageSquare size={16} className="mr-1" />
-                      문자 발송
-                    </Button>
-                  )}
-
-                  {reservation.status === 'cancelled' && reservation.waitlistNotified && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-full"
-                    >
-                      <RefreshCw size={16} className="mr-1" />
-                      대기자 확인
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
-
-          {filteredReservations.length === 0 && (
-            <Card className="text-center py-12">
-              <Calendar className="mx-auto mb-4 text-text-secondary" size={48} />
-              <p className="text-text-secondary text-lg">
-                해당 조건의 예약이 없습니다.
-              </p>
-            </Card>
-          )}
+          <div className="flex gap-4">
+            <Button variant="outline" className="border-slate-300 text-base h-11 px-5">
+              <Calendar className="w-5 h-5 mr-2" />
+              날짜 선택
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-base h-11 px-5">
+              <Clock className="w-5 h-5 mr-2" />
+              타임 블록
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* 상세보기 모달 */}
-      {selectedReservation && (
-        <Modal
-          isOpen={showDetailModal}
-          onClose={() => setShowDetailModal(false)}
-          title="예약 상세 정보"
-          size="md"
-        >
-          <div className="space-y-4">
-            <div>
-              <p className="font-semibold text-text-primary mb-2">고객 정보</p>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-text-secondary">
-                  이름: {selectedReservation.customer.name}
-                </p>
-                <p className="text-sm text-text-secondary">
-                  신뢰 등급: {selectedReservation.customer.trustLevel} {'⭐'.repeat(selectedReservation.customer.stars)}
-                </p>
-                <p className="text-sm text-text-secondary">
-                  방문 횟수: {selectedReservation.customer.totalVisits}회
-                </p>
-                <p className="text-sm text-text-secondary">
-                  노쇼 횟수: {selectedReservation.customer.noShowCount}회
-                </p>
-              </div>
-            </div>
+        {/* 탭 - 더 깔끔하게 */}
+        <Tabs defaultValue="today" className="mb-8">
+          <TabsList className="bg-white border h-12">
+            <TabsTrigger value="today" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-base px-6">
+              오늘 (12건)
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-base px-6">
+              예정 (28건)
+            </TabsTrigger>
+            <TabsTrigger value="past" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-base px-6">
+              지난 예약
+            </TabsTrigger>
+            <TabsTrigger value="cancelled" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-base px-6">
+              취소 내역
+            </TabsTrigger>
+          </TabsList>
 
-            <div>
-              <p className="font-semibold text-text-primary mb-2">예약 정보</p>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-text-secondary">날짜: {selectedReservation.date}</p>
-                <p className="text-sm text-text-secondary">시간: {selectedReservation.time}</p>
-                <p className="text-sm text-text-secondary">인원: {selectedReservation.partySize}명</p>
-                <p className="text-sm text-text-secondary">메뉴: {selectedReservation.menu}</p>
-                <p className="text-sm text-text-secondary">
-                  결제 카드: {selectedReservation.cardRegistered ? '등록 완료' : '미등록'}
-                </p>
-              </div>
-            </div>
+          <TabsContent value="today" className="mt-8 space-y-6">
+            {mockDetailedReservations.map((reservation) => (
+              <Card key={reservation.id} className="border-slate-200">
+                <CardContent className="p-8">
+                  <div className="flex items-start gap-8">
+                    {/* 왼쪽: 고객 정보 */}
+                    <div className="flex-shrink-0">
+                      <Avatar className="w-16 h-16 bg-blue-100">
+                        <AvatarFallback className="text-blue-700 font-semibold text-xl">
+                          {reservation.customerInitial}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
 
-            <div>
-              <p className="font-semibold text-text-primary mb-2">상태</p>
-              <div className="flex items-center">
-                {statusStyles[selectedReservation.status].icon}
-                <span className={`ml-2 font-semibold ${statusStyles[selectedReservation.status].textColor}`}>
-                  {statusStyles[selectedReservation.status].text}
-                </span>
-              </div>
-            </div>
+                    {/* 중앙: 상세 정보 */}
+                    <div className="flex-1">
+                      {/* 이름 & 상태 */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <h3 className="text-xl font-bold text-slate-900">
+                          {reservation.customerName}
+                        </h3>
+                        <Badge
+                          variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}
+                          className={`text-sm px-3 py-1 ${reservation.status === 'confirmed'
+                            ? 'bg-blue-100 text-blue-700 border-blue-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {reservation.statusText}
+                        </Badge>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-3 py-1">
+                          {reservation.trustLevel}
+                        </Badge>
+                      </div>
 
-            {selectedReservation.status === 'cancelled' && (
-              <div>
-                <p className="font-semibold text-text-primary mb-2">취소 정보</p>
-                <p className="text-sm text-text-secondary">
-                  취소 시간: {selectedReservation.cancelledAt}
-                </p>
-                {selectedReservation.waitlistNotified && (
-                  <p className="text-sm text-primary-purple mt-2">
-                    ✅ 대기자 {selectedReservation.waitlistCount}명에게 자동 알림 발송됨
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
+                      {/* 연락처 */}
+                      <div className="flex items-center gap-3 mb-5 text-base text-slate-600">
+                        <Phone className="w-5 h-5" />
+                        <span>{reservation.phone}</span>
+                        <Separator orientation="vertical" className="h-5 mx-2" />
+                        <span>신뢰 점수: {reservation.trustScore}점</span>
+                        <Separator orientation="vertical" className="h-5 mx-2" />
+                        <span>방문 {reservation.visitCount}회</span>
+                      </div>
 
-      {/* Toast 알림 */}
-      <Toast
-        show={toast.show}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, show: false })}
-      />
+                      {/* 예약 상세 정보 - 아이콘만 사용 */}
+                      <div className="grid grid-cols-2 gap-x-10 gap-y-4 mb-5">
+                        <div className="flex items-center gap-3 text-base">
+                          <Calendar className="w-5 h-5 text-slate-400" />
+                          <span className="text-slate-600">날짜:</span>
+                          <span className="font-medium text-slate-900">{reservation.date}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-base">
+                          <Clock className="w-5 h-5 text-slate-400" />
+                          <span className="text-slate-600">시간:</span>
+                          <span className="font-medium text-slate-900">{reservation.time}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-base">
+                          <Users className="w-5 h-5 text-slate-400" />
+                          <span className="text-slate-600">인원:</span>
+                          <span className="font-medium text-slate-900">{reservation.partySize}명</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-base">
+                          <MapPin className="w-5 h-5 text-slate-400" />
+                          <span className="text-slate-600">테이블:</span>
+                          <span className="font-medium text-slate-900">{reservation.tableNumber}</span>
+                        </div>
+                      </div>
+
+                      <Separator className="my-5" />
+
+                      {/* 주문 정보 */}
+                      <div className="mb-4">
+                        <div className="flex items-center gap-3 text-base font-medium text-slate-700 mb-3">
+                          <FileText className="w-5 h-5" />
+                          사전 주문
+                        </div>
+                        <p className="text-base text-slate-600 pl-8">{reservation.menu}</p>
+                        {reservation.totalAmount > 0 && (
+                          <div className="flex items-center gap-3 mt-3 pl-8">
+                            <DollarSign className="w-5 h-5 text-slate-400" />
+                            <span className="text-base text-slate-600">예상 금액:</span>
+                            <span className="text-base font-semibold text-slate-900">
+                              {reservation.totalAmount.toLocaleString()}원
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 요청사항 */}
+                      {reservation.specialRequest !== '없음' && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                          <div className="text-sm font-medium text-amber-900 mb-2">
+                            요청사항
+                          </div>
+                          <p className="text-base text-amber-800">{reservation.specialRequest}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 오른쪽: 액션 버튼 */}
+                    <div className="flex flex-col gap-3 flex-shrink-0 w-44">
+                      <Button
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-base h-11"
+                      >
+                        <MessageSquare className="w-5 h-5 mr-2" />
+                        알림 보내기
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full border-slate-300 text-base h-11"
+                      >
+                        예약 수정
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full border-slate-300 text-base h-11"
+                      >
+                        테이블 변경
+                      </Button>
+                      {reservation.status === 'confirmed' && (
+                        <Button
+                          variant="outline"
+                          className="w-full border-green-300 text-green-700 hover:bg-green-50 text-base h-11"
+                        >
+                          방문 완료
+                        </Button>
+                      )}
+                      <Separator className="my-2" />
+                      <Button
+                        variant="outline"
+                        className="w-full border-red-300 text-red-700 hover:bg-red-50 text-base h-11"
+                      >
+                        예약 취소
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="upcoming" className="mt-6 text-center text-slate-500">
+            예정된 예약 데이터는 추후 연동됩니다.
+          </TabsContent>
+          <TabsContent value="past" className="mt-6 text-center text-slate-500">
+            지난 예약 데이터는 추후 연동됩니다.
+          </TabsContent>
+          <TabsContent value="cancelled" className="mt-6 text-center text-slate-500">
+            취소 내역 데이터는 추후 연동됩니다.
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
-};
+}
 
 export default Reservations;

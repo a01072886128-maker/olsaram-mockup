@@ -1,11 +1,8 @@
 /**
- * 고객 메인 화면 - 위치 기반 맛집 탐색
+ * 고객 메인 화면 - 위치 기반 맛집 탐색 (KT 스타일)
  *
  * 위치 기반으로 주변 맛집을 검색하고 예약할 수 있는 페이지
- * - 현재 위치 표시
- * - 음식 종류 필터
- * - 맛집 목록 (리뷰, 거리, 신뢰 고객 혜택 표시)
- * - 예약하기 버튼
+ * KT 사장님Easy의 깔끔한 카드 그리드 디자인 적용
  */
 
 import { useState } from 'react';
@@ -127,132 +124,138 @@ const Search = () => {
   });
 
   return (
-    <div className="min-h-screen bg-bg-main">
-      <Navbar userType="customer" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-text-primary">
-              주변 맛집 찾기
-            </h1>
+    <div className="min-h-screen bg-white">
+      {/* Header - KT 스타일 */}
+      <header className="bg-white border-b sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/">
+            <h1 className="text-2xl font-bold text-text-primary">올사람</h1>
+          </Link>
+          <div className="flex gap-3">
             <Link to="/customer/my-page">
-              <Button size="sm" variant="secondary">
-                <Heart className="mr-2" size={16} />
-                리워드
-              </Button>
+              <Button size="sm" variant="outline">마이페이지</Button>
             </Link>
-          </div>
-
-          {/* 현재 위치 */}
-          <div className="flex items-center text-text-secondary mb-6">
-            <MapPin className="mr-2 text-primary-green" size={20} />
-            <span className="font-medium">현재 위치: 홍대입구역</span>
-            <button className="ml-4 text-primary-green hover:text-dark-green font-semibold text-sm flex items-center">
-              <Navigation size={16} className="mr-1" />
-              위치 변경
-            </button>
-          </div>
-
-          {/* 검색바 */}
-          <div className="relative mb-6">
-            <input
-              type="text"
-              placeholder="맛집 이름으로 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 pl-12 rounded-lg border border-border-color focus:outline-none focus:ring-2 focus:ring-primary-green"
-            />
-            <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-secondary" size={20} />
-          </div>
-
-          {/* 카테고리 필터 */}
-          <div className="flex flex-wrap gap-3">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-primary-green text-white'
-                    : 'bg-white text-text-secondary border border-border-color hover:border-primary-green'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            <Button size="sm">내 예약</Button>
           </div>
         </div>
+      </header>
 
-        {/* 맛집 목록 */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-text-primary">
-              {selectedCategory === '전체' ? '모든 맛집' : selectedCategory}
-              <span className="text-text-secondary font-normal ml-2">
-                ({filteredRestaurants.length}곳)
-              </span>
-            </h2>
-            <select className="px-3 py-2 rounded-lg border border-border-color text-sm focus:outline-none focus:ring-2 focus:ring-primary-green">
-              <option>거리순</option>
-              <option>평점순</option>
-              <option>리뷰 많은순</option>
-            </select>
+      {/* Search Bar */}
+      <div className="bg-gray-50 border-b py-6">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-text-primary mb-2">
+              주변 맛집 찾기
+            </h1>
+            <p className="text-text-secondary">노쇼 걱정 없는 신뢰 예약 플랫폼</p>
           </div>
 
-          {filteredRestaurants.map(restaurant => (
-            <Card key={restaurant.id} hover>
-              <div className="flex flex-col md:flex-row md:items-start gap-6">
-                {/* 맛집 이미지 (이모지로 대체) */}
-                <div className="w-full md:w-32 h-32 bg-gradient-to-br from-primary-green to-primary-purple rounded-xl flex items-center justify-center text-6xl flex-shrink-0">
+          <div className="relative max-w-2xl mx-auto mb-4">
+            <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-secondary" size={20} />
+            <input
+              type="text"
+              placeholder="가게 이름, 음식 종류로 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-lg border border-border-color focus:outline-none focus:ring-2 focus:ring-primary-green"
+            />
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-sm text-text-secondary">
+            <MapPin className="w-4 h-4 text-primary-green" />
+            <span>현재 위치: 서울 마포구 홍대입구</span>
+            <button className="ml-2 text-primary-green hover:text-dark-green font-semibold flex items-center">
+              <Navigation size={14} className="mr-1" />
+              변경
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* 카테고리 필터 */}
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {categories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+                selectedCategory === category
+                  ? 'bg-primary-green text-white'
+                  : 'bg-white text-text-secondary border border-border-color hover:border-primary-green'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {/* 맛집 그리드 - KT 스타일 3열 */}
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold text-text-primary mb-2">
+            {selectedCategory === '전체' ? '모든 맛집' : selectedCategory}
+          </h2>
+          <p className="text-text-secondary">
+            총 {filteredRestaurants.length}곳
+          </p>
+        </div>
+
+        {filteredRestaurants.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredRestaurants.map(restaurant => (
+              <Card key={restaurant.id} hover className="overflow-hidden">
+                {/* 이미지 영역 */}
+                <div className="aspect-video bg-gradient-to-br from-primary-green/20 to-secondary/20 relative flex items-center justify-center text-6xl">
                   {restaurant.imageUrl}
+                  <div className="absolute top-3 right-3">
+                    {restaurant.openNow ? (
+                      <span className="px-3 py-1 bg-primary-green text-white text-xs font-semibold rounded-full">
+                        영업중
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">
+                        영업종료
+                      </span>
+                    )}
+                  </div>
+                  <button className="absolute top-3 left-3 text-white hover:text-red-500 transition-colors">
+                    <Heart size={24} />
+                  </button>
                 </div>
 
                 {/* 맛집 정보 */}
-                <div className="flex-1">
+                <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-2xl font-bold text-text-primary">
-                          {restaurant.name}
-                        </h3>
-                        {restaurant.openNow ? (
-                          <span className="px-2 py-1 bg-primary-green text-white text-xs font-semibold rounded">
-                            영업중
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-gray-400 text-white text-xs font-semibold rounded">
-                            영업종료
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-text-secondary mb-2">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg text-text-primary mb-1">
+                        {restaurant.name}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-text-secondary mb-2">
                         <span className="flex items-center">
-                          <Star className="text-yellow-500 mr-1" size={16} fill="currentColor" />
+                          <Star className="text-yellow-500 mr-1" size={14} fill="currentColor" />
                           <span className="font-bold text-text-primary mr-1">
                             {restaurant.rating}
                           </span>
-                          (리뷰 {restaurant.reviewCount})
+                          ({restaurant.reviewCount})
                         </span>
-                        <span className="flex items-center">
-                          <MapPin className="mr-1" size={16} />
-                          {restaurant.distance} · 도보 {restaurant.walkTime}
-                        </span>
+                        <span>·</span>
                         <span>{restaurant.priceRange}</span>
                       </div>
                     </div>
-                    <button className="text-text-secondary hover:text-red-500 transition-colors">
-                      <Heart size={24} />
-                    </button>
                   </div>
+
+                  <p className="text-sm text-text-secondary mb-3 flex items-center">
+                    <MapPin size={14} className="mr-1" />
+                    {restaurant.distance} · 도보 {restaurant.walkTime}
+                  </p>
 
                   {/* 태그 */}
                   <div className="flex flex-wrap gap-2 mb-3">
                     {restaurant.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-3 py-1 bg-gray-100 text-text-secondary text-sm rounded-full"
+                        className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded"
                       >
                         #{tag}
                       </span>
@@ -260,44 +263,36 @@ const Search = () => {
                   </div>
 
                   {/* 신뢰 고객 혜택 */}
-                  <div className="bg-gradient-to-r from-light-green to-light-purple bg-opacity-10 rounded-lg p-3 mb-4">
-                    <div className="flex items-center">
-                      <Tag className="text-primary-green mr-2" size={18} />
+                  <div className="bg-green-50 rounded-lg p-3 mb-4">
+                    <div className="flex items-center text-sm">
+                      <Tag className="text-primary-green mr-2" size={16} />
                       <span className="font-semibold text-primary-green">
-                        💚 {restaurant.discount}
+                        {restaurant.discount}
                       </span>
                     </div>
                   </div>
 
-                  {/* 액션 버튼 */}
-                  <div className="flex gap-3">
-                    <Button variant="primary" className="flex-1" disabled={!restaurant.openNow}>
-                      <Clock className="mr-2" size={18} />
-                      지금 예약하기
-                    </Button>
-                    <Link to="/customer/voice-reservation" className="flex-1">
-                      <Button variant="secondary" className="w-full" disabled={!restaurant.openNow}>
-                        🎤 음성 예약
-                      </Button>
-                    </Link>
-                    <button className="px-6 py-3 border-2 border-text-secondary text-text-secondary rounded-lg font-semibold hover:bg-gray-50 transition-colors">
-                      상세보기
-                    </button>
-                  </div>
+                  {/* 예약 버튼 */}
+                  <Button
+                    variant="primary"
+                    className="w-full"
+                    disabled={!restaurant.openNow}
+                  >
+                    <Clock className="mr-2" size={18} />
+                    지금 예약하기
+                  </Button>
                 </div>
-              </div>
-            </Card>
-          ))}
-
-          {filteredRestaurants.length === 0 && (
-            <Card className="text-center py-12">
-              <p className="text-text-secondary text-lg">
-                검색 결과가 없습니다. 다른 검색어나 카테고리를 선택해보세요.
-              </p>
-            </Card>
-          )}
-        </div>
-      </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="text-center py-12">
+            <p className="text-text-secondary text-lg">
+              검색 결과가 없습니다. 다른 검색어나 카테고리를 선택해보세요.
+            </p>
+          </Card>
+        )}
+      </main>
     </div>
   );
 };

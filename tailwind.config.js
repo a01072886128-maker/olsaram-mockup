@@ -11,6 +11,13 @@ export default {
         'primary-green': '#10B981',
         'primary-purple': '#8B5CF6',
 
+        // Phase 2 (KT 스타일) 색상
+        'kt-blue': '#0066CC',
+        'kt-blue-dark': '#0052A3',
+        'kt-blue-light': '#4D94E6',
+        'kt-warning': '#F59E0B',
+        'kt-danger': '#EF4444',
+
         // 보조색상
         'light-green': '#34D399',
         'light-purple': '#A78BFA',

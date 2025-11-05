@@ -1,383 +1,237 @@
-/**
- * AI 노쇼 사기 의심 탐지 페이지
- *
- * 실시간으로 의심 예약을 감지하고 관리
- * - 위험도별 알림
- * - 상세 정보 모달
- * - 블랙리스트 관리
- */
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import { AlertTriangle, Shield, TrendingUp, X } from 'lucide-react';
 
-import { useState } from 'react';
-import { Shield, AlertTriangle, Ban, Eye, UserX, Activity } from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import Toast from '../../components/Toast';
+const mockSuspiciousReservations = [
+  {
+    id: 1,
+    name: '010-****-1234',
+    riskScore: 95,
+    riskLevel: 'high',
+    reasons: [
+      '공공기관 이름 사칭 의심',
+      '단체 예약 후 선결제 요구 패턴',
+      '같은 번호로 5곳 동시 예약',
+    ],
+    partySize: 20,
+    requestedDate: '2025-11-10',
+    status: 'blocked',
+  },
+  {
+    id: 2,
+    name: '이**',
+    riskScore: 72,
+    riskLevel: 'medium',
+    reasons: ['최근 3회 연속 노쇼 이력', '예약 후 30분 내 취소 반복'],
+    partySize: 4,
+    requestedDate: '2025-11-06',
+    status: 'warning',
+  },
+  {
+    id: 3,
+    name: '박**',
+    riskScore: 45,
+    riskLevel: 'low',
+    reasons: ['신규 가입자 (가입 3일)', '카드 등록 없음'],
+    partySize: 2,
+    requestedDate: '2025-11-05',
+    status: 'monitoring',
+  },
+];
 
-const FraudDetection = () => {
-  const [selectedAlert, setSelectedAlert] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+const mockStats = {
+  blockedThisMonth: 8,
+  savedAmount: 1200000,
+  detectionRate: 98.5,
+  falsePositive: 1.2,
+};
 
-  // 더미 데이터
-  const mockFraudAlerts = [
-    {
-      id: 1,
-      phone: "010-****-5678",
-      riskLevel: "high",
-      riskScore: 87,
-      reasons: [
-        "동시 다발 예약 (5곳)",
-        "신규 가입 후 즉시 예약 (가입 10분 전)",
-        "사칭 의심 키워드 (\"소방관\", \"공공기관\" 언급)",
-        "고액 단체 예약 (15만원 이상)"
-      ],
-      reservation: {
-        date: "11월 10일",
-        time: "오후 7시",
-        partySize: 12,
-        estimatedAmount: "150,000원"
-      },
-      timestamp: "2분 전"
-    },
-    {
-      id: 2,
-      phone: "010-****-1234",
-      riskLevel: "medium",
-      riskScore: 62,
-      reasons: [
-        "짧은 시간 내 여러 가게 예약 (3곳, 30분 내)",
-        "IP 주소 의심 (해외 IP)"
-      ],
-      reservation: {
-        date: "11월 8일",
-        time: "오후 8시",
-        partySize: 4,
-        estimatedAmount: "60,000원"
-      },
-      timestamp: "15분 전"
-    },
-    {
-      id: 3,
-      phone: "010-****-7890",
-      riskLevel: "low",
-      riskScore: 35,
-      reasons: [
-        "예약 변경 2회",
-        "새로운 결제 카드 등록"
-      ],
-      reservation: {
-        date: "11월 7일",
-        time: "오후 6시 30분",
-        partySize: 2,
-        estimatedAmount: "30,000원"
-      },
-      timestamp: "1시간 전"
-    }
-  ];
+const riskStyles = {
+  high: {
+    container: 'border-red-200 bg-red-50',
+    badge: 'bg-red-600 text-white',
+  },
+  medium: {
+    container: 'border-orange-200 bg-orange-50',
+    badge: 'bg-kt-warning text-white',
+  },
+  low: {
+    container: 'border-yellow-200 bg-yellow-50',
+    badge: 'bg-yellow-500 text-white',
+  },
+};
 
-  const mockBlacklist = [
-    { phone: "010-****-9876", reports: 3, isHighRisk: false },
-    { phone: "010-****-4321", reports: 5, isHighRisk: true }
-  ];
+const riskLabels = {
+  high: '높음',
+  medium: '중간',
+  low: '낮음',
+};
 
-  // 위험도별 스타일
-  const riskLevelStyles = {
-    high: {
-      badge: 'bg-red-100 text-red-700 border-red-300',
-      text: '높음',
-      icon: 'text-red-500',
-      border: 'border-red-200'
-    },
-    medium: {
-      badge: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-      text: '중간',
-      icon: 'text-yellow-500',
-      border: 'border-yellow-200'
-    },
-    low: {
-      badge: 'bg-green-100 text-green-700 border-green-300',
-      text: '낮음',
-      icon: 'text-green-500',
-      border: 'border-green-200'
-    }
-  };
-
-  // 상세보기
-  const handleShowDetail = (alert) => {
-    setSelectedAlert(alert);
-    setShowDetailModal(true);
-  };
-
-  // 블랙리스트 등록 확인
-  const handleBlacklistConfirm = (alert) => {
-    setSelectedAlert(alert);
-    setConfirmAction('blacklist');
-    setShowConfirmModal(true);
-  };
-
-  // 예약 거부 확인
-  const handleRejectConfirm = (alert) => {
-    setSelectedAlert(alert);
-    setConfirmAction('reject');
-    setShowConfirmModal(true);
-  };
-
-  // 액션 실행
-  const executeAction = () => {
-    setShowConfirmModal(false);
-
-    if (confirmAction === 'blacklist') {
-      setToast({
-        show: true,
-        message: `${selectedAlert.phone} 번호가 블랙리스트에 등록되었습니다.`,
-        type: 'success'
-      });
-    } else if (confirmAction === 'reject') {
-      setToast({
-        show: true,
-        message: '예약이 거부되었습니다.',
-        type: 'success'
-      });
-    }
-  };
-
+function FraudDetection() {
   return (
-    <div className="min-h-screen bg-bg-main">
-      <Navbar userType="owner" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center mr-4">
-              <Shield className="text-white" size={28} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-text-primary">
-                🚨 AI 사기 패턴 탐지 시스템
-              </h1>
-              <p className="text-text-secondary mt-1">
-                실시간으로 의심 예약을 감지하고 있습니다
-              </p>
-            </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header - 프로페셔널 스타일 */}
+      <header className="sticky top-0 z-50 border-b bg-white">
+        <div className="container mx-auto px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-12">
+            <a href="/" className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">
+              올사람
+            </a>
+            <nav className="hidden md:flex gap-10">
+              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                대시보드
+              </a>
+              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                예약 관리
+              </a>
+              <a className="text-base text-slate-900 font-semibold border-b-2 border-blue-600 pb-[26px] cursor-pointer">
+                사기 탐지
+              </a>
+              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                메뉴 관리
+              </a>
+            </nav>
           </div>
+          <Button variant="ghost" className="text-base">
+            홍대 중국집
+          </Button>
+        </div>
+      </header>
 
-          {/* 실시간 모니터링 상태 */}
-          <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Activity className="text-primary-green mr-3 animate-pulse" size={24} />
-                <div>
-                  <p className="font-semibold text-text-primary">실시간 모니터링 중...</p>
-                  <p className="text-sm text-text-secondary">AI가 24시간 예약 패턴을 분석합니다</p>
-                </div>
+      <main className="container mx-auto px-6 py-8">
+        {/* 타이틀 - 이모지 제거 */}
+        <div className="mb-8">
+          <h2 className="mb-2 text-2xl font-bold text-slate-900">AI 사기 탐지 시스템</h2>
+          <p className="text-slate-600">실시간으로 의심 예약을 분석하고 자동으로 차단합니다</p>
+        </div>
+
+        <Alert className="mb-6 border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-900">
+            <strong>주의!</strong> 오늘 2건의 사기 의심 예약이 자동 차단되었습니다.
+          </AlertDescription>
+        </Alert>
+
+        {/* 통계 카드 - 프로페셔널 색상 */}
+        <div className="mb-8 grid gap-6 md:grid-cols-4">
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">이번 달 차단</CardTitle>
+              <Shield className="h-5 w-5 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-600">{mockStats.blockedThisMonth}건</div>
+              <p className="mt-1 text-xs text-slate-500">전월 대비 -20%</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">절감 금액</CardTitle>
+              <TrendingUp className="h-5 w-5 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">
+                {(mockStats.savedAmount / 10000).toFixed(0)}만원
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-primary-green">{mockFraudAlerts.length}</p>
-                <p className="text-sm text-text-secondary">의심 건</p>
-              </div>
-            </div>
+              <p className="mt-1 text-xs text-slate-500">예상 피해액 기준</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">탐지율</CardTitle>
+              <Shield className="h-5 w-5 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-slate-900">{mockStats.detectionRate}%</div>
+              <p className="mt-1 text-xs text-green-600">업계 평균 대비 +15%</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">오탐률</CardTitle>
+              <AlertTriangle className="h-5 w-5 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-slate-900">{mockStats.falsePositive}%</div>
+              <p className="mt-1 text-xs text-slate-500">매우 낮은 수준</p>
+            </CardContent>
           </Card>
         </div>
 
-        {/* 의심 예약 목록 */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-text-primary mb-6 flex items-center">
-            <AlertTriangle className="mr-2 text-orange-500" size={24} />
-            의심 예약 목록
-          </h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>의심 예약 목록</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {mockSuspiciousReservations.map((reservation) => {
+                const style = riskStyles[reservation.riskLevel] ?? {};
 
-          <div className="space-y-4">
-            {mockFraudAlerts.map((alert) => (
-              <Card key={alert.id} className={`border-2 ${riskLevelStyles[alert.riskLevel].border}`}>
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div className="flex-1">
-                    {/* 전화번호와 위험도 */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <AlertTriangle className={riskLevelStyles[alert.riskLevel].icon} size={24} />
-                      <span className="text-xl font-bold text-text-primary">{alert.phone}</span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${riskLevelStyles[alert.riskLevel].badge}`}>
-                        위험도: {riskLevelStyles[alert.riskLevel].text} ({alert.riskScore}%)
-                      </span>
-                      <span className="text-sm text-text-secondary">{alert.timestamp}</span>
+                return (
+                  <div
+                    key={reservation.id}
+                    className={`rounded-lg border-2 p-4 ${style.container ?? ''}`}
+                  >
+                    <div className="mb-3 flex items-start justify-between">
+                      <div>
+                        <div className="mb-1 flex items-center gap-2">
+                          <span className="text-lg font-semibold">{reservation.name}</span>
+                          <Badge className={style.badge}>{riskLabels[reservation.riskLevel] ?? '정보 없음'}</Badge>
+                          <span className="text-sm text-slate-600">위험도: {reservation.riskScore}점</span>
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          {reservation.requestedDate} · {reservation.partySize}명 예약 시도
+                        </p>
+                      </div>
+                      {reservation.status === 'blocked' && (
+                        <Badge variant="outline" className="bg-slate-100">
+                          자동 차단됨
+                        </Badge>
+                      )}
                     </div>
 
-                    {/* 감지된 패턴 */}
                     <div className="mb-3">
-                      <p className="font-semibold text-text-primary mb-2">감지된 의심 패턴:</p>
+                      <p className="mb-2 text-sm font-medium text-slate-700">의심 사유:</p>
                       <ul className="space-y-1">
-                        {alert.reasons.map((reason, idx) => (
-                          <li key={idx} className="text-sm text-text-secondary flex items-start">
-                            <span className="text-red-500 mr-2">•</span>
-                            {reason}
+                        {reservation.reasons.map((reason, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm text-slate-600">
+                            <span>•</span>
+                            <span>{reason}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
 
-                    {/* 예약 정보 */}
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-sm font-semibold text-text-primary mb-1">예약 정보:</p>
-                      <p className="text-sm text-text-secondary">
-                        📅 {alert.reservation.date} {alert.reservation.time} / 인원: {alert.reservation.partySize}명
-                        {alert.reservation.estimatedAmount && (
-                          <> / 예상 금액: {alert.reservation.estimatedAmount}</>
-                        )}
-                      </p>
+                    <div className="flex flex-wrap gap-2">
+                      {reservation.status !== 'blocked' && (
+                        <>
+                          <Button size="sm" variant="destructive" className="gap-1">
+                            <X className="h-4 w-4" />
+                            차단하기
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            허용하기
+                          </Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="outline">
+                        상세 보기
+                      </Button>
                     </div>
                   </div>
-
-                  {/* 액션 버튼 */}
-                  <div className="flex flex-col gap-2 md:min-w-[150px]">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleShowDetail(alert)}
-                      className="w-full"
-                    >
-                      <Eye size={16} className="mr-1" />
-                      상세보기
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="w-full bg-orange-500 hover:bg-orange-600"
-                      onClick={() => handleRejectConfirm(alert)}
-                    >
-                      <Ban size={16} className="mr-1" />
-                      예약 거부
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="w-full bg-red-500 hover:bg-red-600"
-                      onClick={() => handleBlacklistConfirm(alert)}
-                    >
-                      <UserX size={16} className="mr-1" />
-                      블랙리스트
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* 공유 블랙리스트 */}
-        <div>
-          <h2 className="text-2xl font-bold text-text-primary mb-4 flex items-center">
-            <UserX className="mr-2 text-red-500" size={24} />
-            공유 블랙리스트
-          </h2>
-          <Card>
-            <p className="text-text-secondary mb-4">
-              다른 사장님들이 신고한 노쇼 고객 목록입니다
-            </p>
-            <div className="space-y-3">
-              {mockBlacklist.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center">
-                    <UserX className="text-red-500 mr-3" size={20} />
-                    <span className="font-semibold text-text-primary">{item.phone}</span>
-                    {item.isHighRisk && (
-                      <span className="ml-2 text-red-500 text-xl">🔥</span>
-                    )}
-                  </div>
-                  <span className="text-sm text-text-secondary">
-                    신고 {item.reports}건
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* 상세보기 모달 */}
-      {selectedAlert && (
-        <Modal
-          isOpen={showDetailModal}
-          onClose={() => setShowDetailModal(false)}
-          title="예약 상세 정보"
-          size="md"
-        >
-          <div className="space-y-4">
-            <div>
-              <p className="font-semibold text-text-primary mb-2">전화번호</p>
-              <p className="text-text-secondary">{selectedAlert.phone}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-text-primary mb-2">위험도</p>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${riskLevelStyles[selectedAlert.riskLevel].badge}`}>
-                {riskLevelStyles[selectedAlert.riskLevel].text} ({selectedAlert.riskScore}%)
-              </span>
-            </div>
-            <div>
-              <p className="font-semibold text-text-primary mb-2">예약 정보</p>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-text-secondary">날짜: {selectedAlert.reservation.date}</p>
-                <p className="text-sm text-text-secondary">시간: {selectedAlert.reservation.time}</p>
-                <p className="text-sm text-text-secondary">인원: {selectedAlert.reservation.partySize}명</p>
-                <p className="text-sm text-text-secondary">예상 금액: {selectedAlert.reservation.estimatedAmount}</p>
-              </div>
-            </div>
-            <div>
-              <p className="font-semibold text-text-primary mb-2">의심 패턴</p>
-              <ul className="space-y-2">
-                {selectedAlert.reasons.map((reason, idx) => (
-                  <li key={idx} className="text-sm text-text-secondary flex items-start">
-                    <AlertTriangle size={16} className="text-red-500 mr-2 mt-0.5" />
-                    {reason}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* 확인 모달 */}
-      <Modal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        title={confirmAction === 'blacklist' ? '블랙리스트 등록' : '예약 거부'}
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-text-secondary">
-            {confirmAction === 'blacklist'
-              ? '이 번호를 블랙리스트에 등록하시겠습니까?'
-              : '이 예약을 거부하시겠습니까?'}
-          </p>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmModal(false)}
-              className="flex-1"
-            >
-              취소
-            </Button>
-            <Button
-              onClick={executeAction}
-              className="flex-1 bg-red-500 hover:bg-red-600"
-            >
-              확인
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Toast 알림 */}
-      <Toast
-        show={toast.show}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, show: false })}
-      />
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
-};
+}
 
 export default FraudDetection;

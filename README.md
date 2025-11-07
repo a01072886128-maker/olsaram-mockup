@@ -26,8 +26,11 @@
 
 ```
 주색상:
-- Primary Green: #10B981 (신뢰, 성장)
-- Primary Purple: #8B5CF6 (프리미엄, 혁신)
+- Primary: #14610a (신뢰, 안정)
+- Primary Foreground: oklch(0.971 0.013 17.38)
+
+- Secondary: #50ca4e (성장, 활력)
+- Secondary Foreground: oklch(0.205 0 0)
 
 보조색상:
 - Light Green: #34D399
@@ -69,6 +72,18 @@ npm run dev
 # 브라우저에서 http://localhost:5173 접속
 ```
 
+### 로그인
+
+사장님 대시보드는 `/auth/login` 페이지에서 아이디와 비밀번호를 입력한 뒤 접속할 수 있습니다. 테스트용 계정을 빠르게 입력하고 싶다면 프로젝트 루트의 `.env` 혹은 `.env.local` 파일에 다음 환경 변수를 추가해 로그인 폼을 미리 채울 수 있습니다.
+
+```bash
+VITE_DEFAULT_LOGIN_ID=owner1
+VITE_DEFAULT_LOGIN_PASSWORD=1234
+```
+
+- 값이 비어 있어도 되지만, 설정하면 로그인 화면에서 자동으로 입력됩니다.
+- 브라우저에 남아 있는 세션 토큰이 유효하면 로그인 없이도 대시보드에 접근합니다.
+
 ### 빌드
 
 ```bash
@@ -79,10 +94,42 @@ npm run build
 npm run preview
 ```
 
+### 백엔드 서버 (Spring Boot)
+
+#### 사전 요구사항
+
+- JDK 17 이상
+- MySQL 인스턴스 (기본 URL: `jdbc:mysql://localhost:3306/olsaram_db`)
+
+#### 실행 방법
+
+```bash
+cd backend
+
+# Gradle Wrapper로 실행
+./gradlew bootRun
+```
+
+필요 시 다음 환경 변수를 설정하여 데이터베이스 연결 정보를 덮어쓸 수 있습니다.
+
+| 변수 | 설명 | 기본값 |
+| --- | --- | --- |
+| `DB_URL` | JDBC URL | `jdbc:mysql://localhost:3306/olsaram_db?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul` |
+| `DB_USERNAME` | DB 사용자명 | `olsaram` |
+| `DB_PASSWORD` | DB 비밀번호 | `olsaram` |
+| `SERVER_PORT` | 애플리케이션 포트 | `8080` |
+
+실행 후 `GET http://localhost:8080/api/health` 호출로 서버 및 DB 연결 상태를 확인할 수 있습니다.
+
 ## 📁 프로젝트 구조
 
 ```
 olsaram-mockup/
+├── backend/               # Spring Boot 기반 백엔드 (Gradle)
+│   ├── build.gradle       # 백엔드 빌드 스크립트
+│   ├── gradlew            # Gradle Wrapper (Linux / macOS)
+│   ├── gradlew.bat        # Gradle Wrapper (Windows)
+│   └── src/               # 백엔드 소스 (Java)
 ├── src/
 │   ├── components/          # 공통 컴포넌트
 │   │   ├── Navbar.jsx       # 네비게이션 바
@@ -90,6 +137,9 @@ olsaram-mockup/
 │   │   ├── Card.jsx         # 카드 컴포넌트
 │   │   ├── StatCard.jsx     # 통계 카드
 │   │   └── ComingSoon.jsx   # 준비 중 페이지
+│   │
+│   ├── contexts/            # 공통 상태 (인증 등)
+│   │   └── AuthContext.jsx
 │   │
 │   ├── pages/               # 페이지 컴포넌트
 │   │   ├── Landing.jsx      # 랜딩 페이지 ✅
@@ -115,6 +165,7 @@ olsaram-mockup/
 ├── postcss.config.js        # PostCSS 설정
 ├── vite.config.js           # Vite 설정
 ├── package.json             # 프로젝트 정보 및 의존성
+├── gradle/                  # (백엔드) Gradle Wrapper 메타데이터
 └── README.md                # 프로젝트 문서 (이 파일)
 ```
 
@@ -125,8 +176,11 @@ olsaram-mockup/
 | 경로 | 페이지 | 상태 |
 |------|--------|------|
 | `/` | 랜딩 페이지 | ✅ 완성 |
+| `/auth/login` | 사장님 로그인 | ✅ 완성 |
 | `/owner/dashboard` | 사장님 대시보드 | ✅ 완성 |
 | `/customer/search` | 고객 맛집 찾기 | ✅ 완성 |
+
+사장님용 경로는 인증이 필요하며, 로그인하지 않은 상태에서 접근하면 `/auth/login`으로 이동합니다.
 
 ### Phase 2 (준비 중 🚧)
 
@@ -216,6 +270,8 @@ olsaram-mockup/
 - **라우팅**: React Router DOM 6.20.0
 - **아이콘**: Lucide React 0.294.0
 - **언어**: JavaScript (JSX)
+- **백엔드 프레임워크**: Spring Boot 3.4.2
+- **백엔드 빌드 도구 & 언어**: Gradle (Wrapper) & Java 17
 
 ## 📦 주요 의존성
 

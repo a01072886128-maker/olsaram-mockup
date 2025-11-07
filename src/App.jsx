@@ -5,10 +5,13 @@
  * 모든 페이지 경로를 정의하고 렌더링
  */
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext.jsx';
 
 // 페이지 컴포넌트 import
 import Landing from './pages/Landing';
+import OwnerLogin from './pages/auth/OwnerLogin';
+import Register from './pages/auth/Register';
 
 // 사장님 페이지
 import OwnerDashboard from './pages/owner/Dashboard';
@@ -28,19 +31,74 @@ import VoiceReservation from './pages/customer/VoiceReservation';
 import GroupReservation from './pages/customer/GroupReservation';
 import CustomerMyPage from './pages/customer/MyPage';
 
+function RequireOwnerAuth({ children }) {
+  const { status } = useAuth();
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-text-secondary">
+        인증 정보를 확인하고 있습니다...
+      </div>
+    );
+  }
+
+  if (status !== 'authenticated') {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  return children;
+}
+
 function App() {
   return (
     <Router>
       <Routes>
         {/* 랜딩 페이지 */}
         <Route path="/" element={<Landing />} />
+        <Route path="/auth/login" element={<OwnerLogin />} />
+        <Route path="/auth/register" element={<Register />} />
 
         {/* 사장님 페이지 */}
-        <Route path="/owner/dashboard" element={<OwnerDashboard />} />
-        <Route path="/owner/fraud-detection" element={<FraudDetection />} />
-        <Route path="/owner/reservations" element={<Reservations />} />
-        <Route path="/owner/menu-ocr" element={<MenuOCR />} />
-        <Route path="/owner/community" element={<Community />} />
+        <Route
+          path="/owner/dashboard"
+          element={
+            <RequireOwnerAuth>
+              <OwnerDashboard />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/fraud-detection"
+          element={
+            <RequireOwnerAuth>
+              <FraudDetection />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/reservations"
+          element={
+            <RequireOwnerAuth>
+              <Reservations />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/menu-ocr"
+          element={
+            <RequireOwnerAuth>
+              <MenuOCR />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/community"
+          element={
+            <RequireOwnerAuth>
+              <Community />
+            </RequireOwnerAuth>
+          }
+        />
 
         {/* 관리자 페이지 */}
         <Route path="/admin/fraud-detection" element={<AdminFraudDetection />} />

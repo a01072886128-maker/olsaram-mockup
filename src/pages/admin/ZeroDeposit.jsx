@@ -231,7 +231,7 @@ function AdminZeroDeposit() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Shield className="h-8 w-8 text-[#10B981]" />
+                  <Shield className="h-8 w-8 text-primary-green" />
                   <div>
                     <p className="text-sm font-semibold text-slate-800">노쇼 감시</p>
                     <p className="text-xs text-slate-500">페널티 연동 시, 노쇼 고객을 자동 차단합니다.</p>
@@ -298,4 +298,3 @@ function AdminZeroDeposit() {
 }
 
 export default AdminZeroDeposit;
-

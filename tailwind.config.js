@@ -8,8 +8,10 @@ export default {
     extend: {
       colors: {
         // 주색상
-        'primary-green': '#10B981',
-        'primary-purple': '#8B5CF6',
+        'primary-green': '#14610a',
+        'primary-purple': '#50ca4e',
+        'primary-foreground': 'oklch(0.971 0.013 17.38)',
+        'secondary-foreground': 'oklch(0.205 0 0)',
 
         // Phase 2 (KT 스타일) 색상
         'kt-blue': '#0066CC',

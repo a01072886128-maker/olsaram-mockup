@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: OlsaramBackend
+  datasource:
+    url: jdbc:mysql://project-db-campus.smhrd.com:3307/campus_24IS_CLOUD3_p3_4?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    username: campus_24IS_CLOUD3_p3_4
+    password: smhrd4
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      initialization-fail-timeout: 0
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:olsaram_test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: never

@@ -15,7 +15,7 @@ export function StatCard({ title, value, description, icon, trend }) {
           <p
             className={cn(
               'mt-2 text-xs font-medium',
-              trend.positive ? 'text-[#10B981]' : 'text-[#EF4444]'
+              trend.positive ? 'text-primary-green' : 'text-[#EF4444]'
             )}
           >
             {trend.label}
@@ -25,4 +25,3 @@ export function StatCard({ title, value, description, icon, trend }) {
     </Card>
   );
 }
-

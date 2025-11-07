@@ -5,13 +5,14 @@
  * 깔끔하고 프로페셔널한 디자인
  */
 
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion as Motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import {
   CheckCircle,
   Shield,
@@ -70,6 +71,17 @@ function FadeIn({ children, delay = 0 }) {
 }
 
 function Landing() {
+  const navigate = useNavigate();
+  const { status } = useAuth();
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    if (status === "authenticated" && !hasRedirected.current) {
+      hasRedirected.current = true;
+      navigate("/owner/dashboard", { replace: true });
+    }
+  }, [status, navigate]);
+
   const [statsRef, statsInView] = useInView({
     triggerOnce: true,
     threshold: 0.3,
@@ -94,30 +106,30 @@ function Landing() {
           <nav className="hidden md:flex gap-6">
             <a
               href="#features"
-              className="text-gray-700 hover:text-[#0066CC] transition-colors"
+              className="text-gray-700 hover:text-primary-green transition-colors"
             >
               서비스 소개
             </a>
             <a
               href="#how-it-works"
-              className="text-gray-700 hover:text-[#0066CC] transition-colors"
+              className="text-gray-700 hover:text-primary-green transition-colors"
             >
               작동 원리
             </a>
             <a
               href="#pricing"
-              className="text-gray-700 hover:text-[#0066CC] transition-colors"
+              className="text-gray-700 hover:text-primary-green transition-colors"
             >
               요금제
             </a>
           </nav>
           <div className="flex gap-3">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => navigate('/auth/login')}>
               로그인
             </Button>
             <Button
               size="sm"
-              className="bg-[#0066CC] hover:bg-[#0052A3] text-white"
+              className="bg-primary-green hover:bg-dark-green text-white"
             >
               무료 시작
             </Button>
@@ -126,10 +138,10 @@ function Landing() {
       </header>
 
       {/* 섹션 1: Hero - 풀스크린 */}
-      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-16">
+      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-lime-50 pt-16">
         <div className="container mx-auto px-4 text-center">
           <FadeIn>
-            <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 text-base font-semibold rounded-full mb-6">
+            <span className="inline-block px-4 py-2 bg-primary-green/10 text-primary-green text-base font-semibold rounded-full mb-6">
               소상공인을 위한 약속지킴 플랫폼
             </span>
           </FadeIn>
@@ -138,7 +150,7 @@ function Landing() {
             <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-text-primary">
               약속을 지키는 사람들,
               <br />
-              <span className="text-[#0066CC]">올사람</span>
+              <span className="text-primary-green">올사람</span>
             </h1>
           </FadeIn>
 
@@ -152,19 +164,19 @@ function Landing() {
 
           <FadeIn delay={0.6}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/owner/dashboard">
+              <Link to="/auth/login">
                 <Button
                   size="lg"
-                  className="text-lg px-10 h-16 bg-[#0066CC] hover:bg-[#0052A3] text-white"
+                  className="text-lg px-10 h-16 bg-primary-green hover:bg-dark-green text-white"
                 >
                   사장님 시작하기 →
                 </Button>
               </Link>
-              <Link to="/customer/search">
+              <Link to="/auth/login">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-lg px-10 h-16 border-2"
+                  className="text-lg px-10 h-16 border-2 border-primary-green text-primary-green hover:bg-primary-green/10"
                 >
                   고객님 시작하기→
                 </Button>
@@ -175,15 +187,15 @@ function Landing() {
           <FadeIn delay={0.8}>
             <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#0066CC]" />
+                <CheckCircle className="w-5 h-5 text-primary-green" />
                 <span>설치비 0원</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#0066CC]" />
+                <CheckCircle className="w-5 h-5 text-primary-green" />
                 <span>수수료 0원</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-[#0066CC]" />
+                <CheckCircle className="w-5 h-5 text-primary-green" />
                 <span>3분 만에 시작</span>
               </div>
             </div>
@@ -218,7 +230,7 @@ function Landing() {
           <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
             <FadeIn delay={0.2}>
               <div className="text-center">
-                <div className="text-6xl font-bold text-[#0066CC] mb-4">
+                <div className="text-6xl font-bold text-primary-green mb-4">
                   {noShowAmount.toFixed(1)}조 원
                 </div>
                 <div className="text-lg text-gray-600 mb-2">
@@ -230,7 +242,7 @@ function Landing() {
 
             <FadeIn delay={0.4}>
               <div className="text-center">
-                <div className="text-6xl font-bold text-[#0066CC] mb-4">
+                <div className="text-6xl font-bold text-primary-green mb-4">
                   0.7%
                 </div>
                 <div className="text-lg text-gray-600 mb-2">검거율</div>
@@ -268,7 +280,7 @@ function Landing() {
           <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
             <FadeIn>
               <div>
-                <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full mb-6">
+                <span className="inline-block px-3 py-1 bg-primary-green/10 text-primary-green text-sm font-semibold rounded-full mb-6">
                   AI Solution
                 </span>
                 <h2 className="text-5xl font-bold mb-6 text-text-primary">
@@ -284,8 +296,8 @@ function Landing() {
 
                 <div className="space-y-6">
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-6 h-6 text-[#0066CC]" />
+                    <div className="w-12 h-12 rounded-lg bg-primary-green/10 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-6 h-6 text-primary-green" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg mb-1 text-text-primary">
@@ -299,8 +311,8 @@ function Landing() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <Zap className="w-6 h-6 text-[#0066CC]" />
+                    <div className="w-12 h-12 rounded-lg bg-primary-green/10 flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-6 h-6 text-primary-green" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg mb-1 text-text-primary">
@@ -313,8 +325,8 @@ function Landing() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="w-6 h-6 text-[#0066CC]" />
+                    <div className="w-12 h-12 rounded-lg bg-primary-green/10 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-6 h-6 text-primary-green" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg mb-1 text-text-primary">
@@ -344,7 +356,7 @@ function Landing() {
                 >
                   <div className="bg-slate-900 rounded-[3rem] p-3 shadow-2xl">
                     <div className="bg-white rounded-[2.5rem] overflow-hidden">
-                      <div className="aspect-[9/19.5] bg-gradient-to-br from-blue-50 to-slate-50 p-6">
+                      <div className="aspect-[9/19.5] bg-gradient-to-br from-emerald-50 to-slate-50 p-6">
                         {/* 대시보드 내용 */}
                         <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
                           <div className="text-xs text-gray-500 mb-3">
@@ -356,13 +368,13 @@ function Landing() {
                           </div>
                           <div className="flex justify-between items-center mb-3">
                             <span className="text-xs">노쇼율</span>
-                            <span className="text-2xl font-bold text-green-600">
+                            <span className="text-2xl font-bold text-primary-green">
                               3%
                             </span>
                           </div>
                           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                             <Motion.div
-                              className="h-full bg-green-500"
+                              className="h-full bg-primary-green"
                               initial={{ width: 0 }}
                               animate={{ width: "97%" }}
                               transition={{ duration: 1.5, delay: 0.5 }}
@@ -372,7 +384,7 @@ function Landing() {
 
                         <div className="bg-white rounded-xl shadow p-3 mb-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-100"></div>
+                            <div className="w-8 h-8 rounded-full bg-primary-green/10"></div>
                             <div>
                               <div className="text-xs font-semibold">
                                 김민수님
@@ -382,7 +394,7 @@ function Landing() {
                               </div>
                             </div>
                             <div className="ml-auto">
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              <span className="text-xs bg-primary-green/10 text-primary-green px-2 py-1 rounded">
                                 신뢰
                               </span>
                             </div>
@@ -469,7 +481,7 @@ function Landing() {
                 >
                   <Card className="h-full hover:shadow-xl transition-shadow duration-300 border-slate-200">
                     <div className="p-6">
-                      <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center text-[#0066CC] mb-4">
+                      <div className="w-16 h-16 rounded-xl bg-primary-green/10 flex items-center justify-center text-primary-green mb-4">
                         {feature.icon}
                       </div>
                       <h3 className="text-xl font-bold text-text-primary mb-3">
@@ -486,7 +498,7 @@ function Landing() {
       </section>
 
       {/* 섹션 5: 성과 */}
-      <section ref={performanceRef} className="py-32 bg-[#0066CC] text-white">
+      <section ref={performanceRef} className="py-32 bg-primary-green text-white">
         <div className="container mx-auto px-4 text-center">
           <FadeIn>
             <h2 className="text-5xl font-bold mb-6">이미 검증된 효과</h2>
@@ -523,7 +535,7 @@ function Landing() {
       </section>
 
       {/* 섹션 6: 최종 CTA */}
-      <section className="py-32 bg-gradient-to-br from-blue-50 to-purple-50">
+      <section className="py-32 bg-gradient-to-br from-emerald-50 to-lime-50">
         <div className="container mx-auto px-4 text-center">
           <FadeIn>
             <h2 className="text-5xl font-bold mb-6 text-text-primary">
@@ -536,10 +548,10 @@ function Landing() {
 
           <FadeIn delay={0.3}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/owner/dashboard">
+              <Link to="/auth/login">
                 <Button
                   size="lg"
-                  className="text-lg px-12 h-16 bg-[#0066CC] hover:bg-[#0052A3] text-white"
+                  className="text-lg px-12 h-16 bg-primary-green hover:bg-dark-green text-white"
                 >
                   무료로 시작하기 →
                 </Button>
@@ -547,7 +559,7 @@ function Landing() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-lg px-12 h-16 border-2"
+                className="text-lg px-12 h-16 border-2 border-primary-green text-primary-green hover:bg-primary-green/10"
               >
                 상담 문의하기
               </Button>

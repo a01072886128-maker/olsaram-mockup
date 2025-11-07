@@ -2,11 +2,11 @@ import { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 const variantClasses = {
-  default: 'bg-[#0066CC] text-white hover:bg-[#0052a3]',
-  outline: 'border border-slate-300 text-slate-700 hover:bg-slate-100',
-  ghost: 'text-slate-600 hover:bg-slate-100',
+  default: 'bg-primary-green text-white hover:bg-dark-green',
+  outline: 'border border-border-color text-text-primary hover:bg-primary-green/10',
+  ghost: 'text-text-secondary hover:bg-primary-green/10',
   destructive: 'bg-red-500 text-white hover:bg-red-600',
-  secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200',
+  secondary: 'bg-primary-green/10 text-primary-green hover:bg-primary-green/20',
 };
 
 const sizeClasses = {
@@ -23,7 +23,7 @@ export const Button = forwardRef(
         ref={ref}
         type={type}
         className={cn(
-          'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0066CC] disabled:opacity-50 disabled:pointer-events-none',
+          'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-green disabled:opacity-50 disabled:pointer-events-none',
           variantClasses[variant] ?? variantClasses.default,
           sizeClasses[size] ?? sizeClasses.default,
           className
@@ -35,4 +35,3 @@ export const Button = forwardRef(
 );
 
 Button.displayName = 'Button';
-

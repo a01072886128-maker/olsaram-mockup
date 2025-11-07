@@ -119,7 +119,7 @@ const Navbar = ({ userType = null }) => {
             {!userType && (
               <div className="flex items-center space-x-4">
                 <Link
-                  to="/owner/dashboard"
+                  to="/auth/login"
                   className="px-4 py-2 text-primary-green font-semibold hover:bg-light-green hover:bg-opacity-10 rounded-lg transition-colors"
                 >
                   사장님 로그인

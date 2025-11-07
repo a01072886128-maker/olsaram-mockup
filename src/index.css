@@ -1,5 +1,5 @@
-q/* Pretendard 폰트 import */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+/* Pretendard 폰트 import */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 /* Tailwind CSS directives */
 @tailwind base;
@@ -10,44 +10,45 @@ q/* Pretendard 폰트 import */
 @layer base {
   :root {
     /* === 메인 색상: 그린 팔레트 === */
-    --primary: 113 81% 21%;        /* #14610a */
+    --primary: 113 81% 21%; /* #14610a */
     --primary-foreground: 0 86% 97%; /* #fef2f2 */
-    --primary-dark: 113 81% 16%;   /* 짙은 #14610a */
+    --primary-dark: 113 81% 16%; /* 짙은 #14610a */
 
-    --secondary: 119 54% 55%;      /* #50ca4e */
+    --secondary: 119 54% 55%; /* #50ca4e */
     --secondary-foreground: 0 0% 9%; /* #171717 */
 
     /* 액센트 */
-    --accent: 38 92% 50%;          /* #F59E0B - 주황 (경고용) */
+    --accent: 38 92% 50%; /* #F59E0B - 주황 (경고용) */
     --accent-foreground: 0 0% 100%;
 
     /* === 배경: 회색 계열 (프로페셔널) === */
-    --background: 0 0% 100%;       /* #FFFFFF - 흰색 */
-    --foreground: 222 47% 11%;     /* #111827 - 거의 검정 */
+    --background: 0 0% 100%; /* #FFFFFF - 흰색 */
+    --foreground: 222 47% 11%; /* #111827 - 거의 검정 */
 
-    --card: 0 0% 100%;             /* #FFFFFF */
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 222 47% 11%;
 
-    --muted: 220 14% 96%;          /* #F8F9FA - 연한 회색 */
+    --muted: 220 14% 96%; /* #F8F9FA - 연한 회색 */
     --muted-foreground: 215 16% 47%; /* #64748B - 회색 */
 
     /* === 상태 색상 === */
-    --success: 142 76% 36%;        /* #059669 - 진한 초록 */
-    --warning: 38 92% 50%;         /* #F59E0B - 주황 */
-    --destructive: 0 84% 60%;      /* #EF4444 - 빨강 */
+    --success: 142 76% 36%; /* #059669 - 진한 초록 */
+    --warning: 38 92% 50%; /* #F59E0B - 주황 */
+    --destructive: 0 84% 60%; /* #EF4444 - 빨강 */
     --destructive-foreground: 0 0% 100%;
 
     /* === 테두리: 명확하게 === */
-    --border: 214 32% 91%;         /* #E5E7EB */
+    --border: 214 32% 91%; /* #E5E7EB */
     --input: 214 32% 91%;
     --ring: 113 81% 21%;
 
     /* === 둥근 모서리: 덜 둥글게 === */
-    --radius: 0.375rem;            /* 6px (기존 8px보다 작게) */
+    --radius: 0.375rem; /* 6px (기존 8px보다 작게) */
   }
 
   * {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+      Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
   body {

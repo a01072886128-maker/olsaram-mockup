@@ -43,7 +43,7 @@ export const authAPI = {
   // 회원가입
   register: async (userData) => {
     try {
-      const fetchResponse = await fetch(`${API_BASE_URL}/auth/register`, {
+      const fetchResponse = await fetch(`${API_BASE_URL}/business-owner/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,11 +51,17 @@ export const authAPI = {
         body: JSON.stringify(userData),
       });
 
-      const data = await fetchResponse.json();
+      let data;
+      try {
+        data = await fetchResponse.json();
+      } catch (e) {
+        console.error('JSON 파싱 실패:', e, '응답:', fetchResponse);
+        throw new Error('서버 응답을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
 
-      // 회원가입 실패
-      if (!data.success) {
-        throw new Error(data.message || '회원가입에 실패했습니다.');
+      // HTTP 상태 코드 확인
+      if (!fetchResponse.ok) {
+        throw new Error(data?.message || '회원가입에 실패했습니다.');
       }
 
       return data;
@@ -68,7 +74,7 @@ export const authAPI = {
   // 로그인
   login: async (credentials) => {
     try {
-      const fetchResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+      const fetchResponse = await fetch(`${API_BASE_URL}/business-owner/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,11 +82,17 @@ export const authAPI = {
         body: JSON.stringify(credentials),
       });
 
-      const data = await fetchResponse.json();
+      let data;
+      try {
+        data = await fetchResponse.json();
+      } catch (e) {
+        console.error('JSON 파싱 실패:', e, '응답:', fetchResponse);
+        throw new Error('서버 응답을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
 
-      // 로그인 실패
-      if (!data.success) {
-        throw new Error(data.message || '로그인에 실패했습니다.');
+      // HTTP 상태 코드 확인
+      if (!fetchResponse.ok) {
+        throw new Error(data?.message || '로그인에 실패했습니다.');
       }
 
       // 로그인 성공 - 토큰과 사용자 정보 저장

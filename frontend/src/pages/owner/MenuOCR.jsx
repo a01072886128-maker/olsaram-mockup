@@ -18,7 +18,7 @@ import { menuAPI } from '../../services/menu';
 
 const MenuOCR = () => {
   const { user } = useAuth();
-  const ownerId = user?.memberId;
+  const ownerId = user?.ownerId;
 
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);

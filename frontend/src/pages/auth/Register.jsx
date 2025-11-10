@@ -14,6 +14,7 @@ function Register() {
     name: '',
     phone: '',
     email: '',
+    businessNumber: '',
     role: 'user', // 기본값: 고객
   });
 
@@ -52,12 +53,12 @@ function Register() {
 
     try {
       const registerData = {
-        userId: formData.userId,
+        loginId: formData.userId,
         password: formData.password,
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        role: formData.role,
+        businessNumber: formData.businessNumber || '1234567890',
       };
 
       const response = await authAPI.register(registerData);

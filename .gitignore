@@ -25,3 +25,6 @@ dist-ssr
 
 # Ignore API Key files
 *.yml
+
+# Spring Boot 환경설정 파일 (보안용)
+backend/src/main/resources/application.yml

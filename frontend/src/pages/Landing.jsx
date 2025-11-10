@@ -114,7 +114,14 @@ function Landing() {
             </a>
           </nav>
           <div className="flex gap-3">
-            <Button variant="outline" size="sm" onClick={() => navigate('/auth/login')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/auth/login';
+              }}
+            >
               로그인
             </Button>
             <Button
@@ -157,7 +164,10 @@ function Landing() {
               <Button
                 size="lg"
                 className="text-lg px-10 h-16 bg-primary-green hover:bg-dark-green text-white"
-                onClick={() => navigate("/auth/login")}
+                onClick={() => {
+                  localStorage.clear();
+                  navigate("/auth/login");
+                }}
               >
                 사장님 시작하기 →
               </Button>
@@ -165,7 +175,10 @@ function Landing() {
                 size="lg"
                 variant="outline"
                 className="text-lg px-10 h-16 border-2 border-primary-green text-primary-green hover:bg-primary-green/10"
-                onClick={() => navigate("/customer/mypage")}
+                onClick={() => {
+                  localStorage.clear();
+                  navigate("/auth/customer-login");
+                }}
               >
                 고객님 시작하기→
               </Button>
@@ -539,7 +552,10 @@ function Landing() {
               <Button
                 size="lg"
                 className="text-lg px-12 h-16 bg-primary-green hover:bg-dark-green text-white"
-                onClick={() => navigate("/auth/login")}
+                onClick={() => {
+                  localStorage.clear();
+                  navigate("/auth/login");
+                }}
               >
                 무료로 시작하기 →
               </Button>

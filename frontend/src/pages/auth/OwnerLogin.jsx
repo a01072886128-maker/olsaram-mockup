@@ -31,27 +31,12 @@ function OwnerLogin() {
     setIsSubmitting(true);
     try {
       const user = await login({
-        userId: userId,
+        loginId: userId,
         password,
       });
 
-      // role에 따라 다른 대시보드로 이동
-      if (user && user.role) {
-        const role = user.role.toLowerCase();
-
-        if (role === 'owner') {
-          navigate('/owner/dashboard', { replace: true });
-        } else if (role === 'user' || role === 'customer') {
-          navigate('/customer/search', { replace: true });
-        } else if (role === 'admin') {
-          navigate('/admin/fraud-detection', { replace: true });
-        } else {
-          // 알 수 없는 role인 경우 기본적으로 고객 페이지로
-          navigate('/customer/search', { replace: true });
-        }
-      } else {
-        navigate('/customer/search', { replace: true });
-      }
+      // 사장님 로그인이므로 owner 대시보드로 이동
+      navigate('/owner/dashboard', { replace: true });
     } catch (err) {
       setFormError(err?.message ?? '로그인에 실패했습니다. 다시 시도해 주세요.');
     } finally {

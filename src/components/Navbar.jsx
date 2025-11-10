@@ -7,13 +7,22 @@
  * @param {string} userType - 사용자 타입 (owner, customer, null)
  */
 
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Store, Users, Menu } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Store, Users, Menu, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = ({ userType = null }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+    setMobileMenuOpen(false);
+  };
 
   // 현재 경로가 활성화된 메뉴인지 확인
   const isActive = (path) => location.pathname === path;
@@ -77,6 +86,13 @@ const Navbar = ({ userType = null }) => {
                 >
                   커뮤니티
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-text-secondary hover:text-red-600 hover:bg-red-50"
+                >
+                  <LogOut size={20} />
+                  <span>로그아웃</span>
+                </button>
               </>
             )}
 
@@ -113,6 +129,13 @@ const Navbar = ({ userType = null }) => {
                 >
                   마이페이지
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-text-secondary hover:text-red-600 hover:bg-red-50"
+                >
+                  <LogOut size={20} />
+                  <span>로그아웃</span>
+                </button>
               </>
             )}
 
@@ -169,6 +192,13 @@ const Navbar = ({ userType = null }) => {
                 >
                   예약관리
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-text-secondary hover:bg-red-50 hover:text-red-600 w-full text-left"
+                >
+                  <LogOut size={20} />
+                  <span>로그아웃</span>
+                </button>
               </div>
             )}
 
@@ -195,6 +225,13 @@ const Navbar = ({ userType = null }) => {
                 >
                   마이페이지
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-text-secondary hover:bg-red-50 hover:text-red-600 w-full text-left"
+                >
+                  <LogOut size={20} />
+                  <span>로그아웃</span>
+                </button>
               </div>
             )}
           </div>

@@ -5,14 +5,13 @@
  * 깔끔하고 프로페셔널한 디자인
  */
 
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion as Motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
-import { useAuth } from "../contexts/AuthContext.jsx";
 import {
   CheckCircle,
   Shield,
@@ -72,15 +71,6 @@ function FadeIn({ children, delay = 0 }) {
 
 function Landing() {
   const navigate = useNavigate();
-  const { status } = useAuth();
-  const hasRedirected = useRef(false);
-
-  useEffect(() => {
-    if (status === "authenticated" && !hasRedirected.current) {
-      hasRedirected.current = true;
-      navigate("/owner/dashboard", { replace: true });
-    }
-  }, [status, navigate]);
 
   const [statsRef, statsInView] = useInView({
     triggerOnce: true,
@@ -164,23 +154,21 @@ function Landing() {
 
           <FadeIn delay={0.6}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/auth/login">
-                <Button
-                  size="lg"
-                  className="text-lg px-10 h-16 bg-primary-green hover:bg-dark-green text-white"
-                >
-                  사장님 시작하기 →
-                </Button>
-              </Link>
-              <Link to="/auth/login">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-lg px-10 h-16 border-2 border-primary-green text-primary-green hover:bg-primary-green/10"
-                >
-                  고객님 시작하기→
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="text-lg px-10 h-16 bg-primary-green hover:bg-dark-green text-white"
+                onClick={() => navigate("/auth/login")}
+              >
+                사장님 시작하기 →
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-10 h-16 border-2 border-primary-green text-primary-green hover:bg-primary-green/10"
+                onClick={() => navigate("/customer/mypage")}
+              >
+                고객님 시작하기→
+              </Button>
             </div>
           </FadeIn>
 
@@ -548,14 +536,13 @@ function Landing() {
 
           <FadeIn delay={0.3}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/auth/login">
-                <Button
-                  size="lg"
-                  className="text-lg px-12 h-16 bg-primary-green hover:bg-dark-green text-white"
-                >
-                  무료로 시작하기 →
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="text-lg px-12 h-16 bg-primary-green hover:bg-dark-green text-white"
+                onClick={() => navigate("/auth/login")}
+              >
+                무료로 시작하기 →
+              </Button>
               <Button
                 size="lg"
                 variant="outline"

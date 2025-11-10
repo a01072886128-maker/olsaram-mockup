@@ -7,103 +7,60 @@
  * - 기존 메뉴 관리
  */
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, Upload, X, Edit2, Trash2, Check, AlertCircle, Plus } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Toast from '../../components/Toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { menuAPI } from '../../services/menu';
 
 const MenuOCR = () => {
+  const { user } = useAuth();
+  const ownerId = user?.memberId;
+
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [existingMenu, setExistingMenu] = useState([]);
+  const [isMenuLoading, setIsMenuLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // 더미 OCR 결과
-  const mockOCRResult = [
-    {
-      id: 1,
-      name: "짜장면",
-      price: 8000,
-      category: "중식",
-      confidence: 98,
-      status: "confirmed"
-    },
-    {
-      id: 2,
-      name: "짬뽕",
-      price: 9000,
-      category: "중식",
-      confidence: 97,
-      status: "confirmed"
-    },
-    {
-      id: 3,
-      name: "탕수육(소)",
-      price: 15000,
-      category: "중식",
-      confidence: 95,
-      status: "confirmed"
-    },
-    {
-      id: 4,
-      name: "탕수육(대)",
-      price: 25000,
-      category: "중식",
-      confidence: 96,
-      status: "confirmed"
-    },
-    {
-      id: 5,
-      name: "볶음밥",
-      price: "8,OOO",
-      category: "중식",
-      confidence: 65,
-      status: "needs_review"
+  const categories = ['전체', '중식', '한식', '일식', '양식', '음료', '미분류'];
+
+  const fetchExistingMenus = useCallback(async () => {
+    if (!ownerId) {
+      return;
     }
-  ];
 
-  // 더미 기존 메뉴
-  const [existingMenu, setExistingMenu] = useState([
-    {
-      id: 1,
-      name: "짜장면",
-      price: 8000,
-      category: "중식",
-      isPopular: true,
-      orderCount: 156
-    },
-    {
-      id: 2,
-      name: "짬뽕",
-      price: 9000,
-      category: "중식",
-      orderCount: 89
-    },
-    {
-      id: 3,
-      name: "김치찌개",
-      price: 9000,
-      category: "한식",
-      orderCount: 45
-    },
-    {
-      id: 4,
-      name: "된장찌개",
-      price: 8000,
-      category: "한식",
-      orderCount: 38
+    setIsMenuLoading(true);
+    try {
+      const data = await menuAPI.fetchMenus(ownerId);
+      setExistingMenu(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      setToast({ show: true, message: error.message || '메뉴를 불러오지 못했습니다.', type: 'error' });
+    } finally {
+      setIsMenuLoading(false);
     }
-  ]);
+  }, [ownerId]);
 
-  const categories = ['전체', '중식', '한식', '일식', '양식', '음료'];
+  useEffect(() => {
+    fetchExistingMenus();
+  }, [fetchExistingMenus]);
 
   // 파일 업로드 핸들러
-  const handleFileUpload = (file) => {
+  const handleFileUpload = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
       setToast({ show: true, message: '이미지 파일만 업로드 가능합니다', type: 'error' });
+      return;
+    }
+
+    if (!ownerId) {
+      setToast({ show: true, message: '로그인 후 이용해주세요.', type: 'error' });
       return;
     }
 
@@ -114,12 +71,25 @@ const MenuOCR = () => {
 
     setIsProcessing(true);
 
-    // 3초 후 더미 결과 표시
-    setTimeout(() => {
-      setOcrResult(mockOCRResult);
+    try {
+      const response = await menuAPI.uploadMenuImage({ ownerId, file });
+      setOcrResult(response?.items ?? []);
+      setToast({
+        show: true,
+        message: response?.message || '메뉴판 인식 완료! 결과를 확인해주세요.',
+        type: 'success',
+      });
+      await fetchExistingMenus();
+    } catch (error) {
+      console.error(error);
+      setToast({
+        show: true,
+        message: error.message || '메뉴판을 분석하지 못했습니다.',
+        type: 'error',
+      });
+    } finally {
       setIsProcessing(false);
-      setToast({ show: true, message: '메뉴판 인식 완료! 결과를 확인해주세요.', type: 'success' });
-    }, 3000);
+    }
   };
 
   // Drag & Drop 핸들러
@@ -147,37 +117,65 @@ const MenuOCR = () => {
   };
 
   // OCR 결과 삭제
-  const handleDeleteOCRItem = (id) => {
-    setOcrResult(ocrResult.filter(item => item.id !== id));
-  };
-
-  // OCR 결과 등록
-  const handleRegisterMenu = () => {
-    const confirmedItems = ocrResult.filter(item => item.status === 'confirmed');
-    if (confirmedItems.length === 0) {
-      setToast({ show: true, message: '등록할 메뉴가 없습니다', type: 'error' });
+  const handleDeleteOCRItem = async (id) => {
+    if (!ownerId) {
       return;
     }
 
-    setToast({ show: true, message: `${confirmedItems.length}개 메뉴가 등록되었습니다!`, type: 'success' });
-    setOcrResult([]);
+    try {
+      await menuAPI.deleteMenu(ownerId, id);
+      setOcrResult(ocrResult.filter(item => item.id !== id));
+      setExistingMenu(existingMenu.filter(item => item.id !== id));
+      setToast({ show: true, message: '메뉴가 삭제되었습니다.', type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setToast({ show: true, message: error.message || '메뉴 삭제에 실패했습니다.', type: 'error' });
+    }
   };
 
   // 기존 메뉴 삭제
-  const handleDeleteExistingMenu = (id) => {
-    setExistingMenu(existingMenu.filter(item => item.id !== id));
-    setToast({ show: true, message: '메뉴가 삭제되었습니다', type: 'success' });
+  const handleDeleteExistingMenu = async (id) => {
+    if (!ownerId) {
+      return;
+    }
+
+    try {
+      await menuAPI.deleteMenu(ownerId, id);
+      setExistingMenu(existingMenu.filter(item => item.id !== id));
+      setOcrResult(ocrResult.filter(item => item.id !== id));
+      setToast({ show: true, message: '메뉴가 삭제되었습니다', type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setToast({ show: true, message: error.message || '메뉴 삭제에 실패했습니다.', type: 'error' });
+    }
+  };
+
+  const handleRefreshMenus = async () => {
+    if (!ownerId) {
+      return;
+    }
+    await fetchExistingMenus();
+    setToast({ show: true, message: '최신 메뉴 목록을 불러왔습니다.', type: 'success' });
   };
 
   // 필터된 메뉴
   const filteredMenu = selectedCategory === '전체'
     ? existingMenu
-    : existingMenu.filter(item => item.category === selectedCategory);
+    : existingMenu.filter(item => categoryLabel(item.category) === selectedCategory);
 
   // 인식 정확도 계산
   const accuracy = ocrResult.length > 0
-    ? Math.round((ocrResult.filter(item => item.status === 'confirmed').length / ocrResult.length) * 100)
+    ? Math.round((ocrResult.filter(item => item.status === 'CONFIRMED').length / ocrResult.length) * 100)
     : 0;
+
+  const categoryLabel = useCallback((category) => category || '미분류', []);
+
+  const renderPrice = useCallback((price) => {
+    if (typeof price === 'number') {
+      return `${price.toLocaleString()}원`;
+    }
+    return '가격 확인 필요';
+  }, []);
 
   return (
     <div className="min-h-screen bg-bg-main">
@@ -194,6 +192,12 @@ const MenuOCR = () => {
             메뉴판 사진만 찍으면 AI가 자동으로 메뉴와 가격을 인식하여 등록합니다!
           </p>
         </div>
+
+        {!ownerId && (
+          <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700">
+            로그인이 필요한 기능입니다. 먼저 로그인한 뒤 다시 시도해주세요.
+          </div>
+        )}
 
         {/* 파일 업로드 영역 */}
         <Card className="mb-8">
@@ -240,8 +244,13 @@ const MenuOCR = () => {
                       accept="image/*"
                       className="hidden"
                       onChange={handleFileSelect}
+                      ref={fileInputRef}
                     />
-                    <Button className="cursor-pointer">
+                    <Button
+                      type="button"
+                      className="cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <Upload size={20} className="mr-2" />
                       파일 선택하기
                     </Button>
@@ -274,8 +283,8 @@ const MenuOCR = () => {
                   인식 정확도: <span className="font-bold text-primary-green">{accuracy}%</span>
                 </span>
                 <span className="text-sm text-text-secondary">
-                  ({ocrResult.filter(item => item.status === 'confirmed').length}개 확인 /
-                  {ocrResult.filter(item => item.status === 'needs_review').length}개 검토 필요)
+                  ({ocrResult.filter(item => item.status === 'CONFIRMED').length}개 확인 /
+                  {ocrResult.filter(item => item.status === 'NEEDS_REVIEW').length}개 검토 필요)
                 </span>
               </div>
             </div>
@@ -285,7 +294,7 @@ const MenuOCR = () => {
                 <div
                   key={item.id}
                   className={`border rounded-lg p-4 ${
-                    item.status === 'needs_review'
+                    item.status === 'NEEDS_REVIEW'
                       ? 'border-yellow-300 bg-yellow-50'
                       : 'border-border-color'
                   }`}
@@ -295,16 +304,14 @@ const MenuOCR = () => {
                       <div>
                         <span className="font-semibold text-text-primary">{item.name}</span>
                       </div>
-                      <div>
-                        <span className="text-text-secondary">{item.price.toLocaleString()}원</span>
-                      </div>
+                      <div className="text-text-secondary">{renderPrice(item.price)}</div>
                       <div>
                         <span className="px-3 py-1 bg-light-green bg-opacity-20 text-primary-green rounded-full text-sm">
-                          {item.category}
+                          {categoryLabel(item.category)}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {item.status === 'confirmed' ? (
+                        {item.status === 'CONFIRMED' ? (
                           <span className="flex items-center text-primary-green text-sm">
                             <Check size={16} className="mr-1" />
                             확인됨
@@ -343,9 +350,9 @@ const MenuOCR = () => {
                       </Button>
                     </div>
                   </div>
-                  {item.status === 'needs_review' && (
+                  {item.status === 'NEEDS_REVIEW' && (
                     <div className="mt-2 text-sm text-yellow-700">
-                      → 가격 확인 필요 (인식 불확실: {item.confidence}%)
+                      → 가격 확인 필요 (인식 불확실: {item.confidence ?? 0}%)
                     </div>
                   )}
                 </div>
@@ -356,9 +363,9 @@ const MenuOCR = () => {
               <Button variant="outline" onClick={() => setOcrResult([])}>
                 전체 취소
               </Button>
-              <Button onClick={handleRegisterMenu}>
+              <Button onClick={handleRefreshMenus}>
                 <Check size={20} className="mr-2" />
-                수정 완료 후 등록하기
+                메뉴 목록 새로고침
               </Button>
             </div>
           </Card>
@@ -394,56 +401,62 @@ const MenuOCR = () => {
           </div>
 
           {/* 메뉴 목록 */}
-          <div className="space-y-3">
-            {filteredMenu.map(menu => (
-              <div
-                key={menu.id}
-                className="border border-border-color rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-lg font-bold text-text-primary">{menu.name}</span>
-                      {menu.isPopular && (
-                        <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-semibold">
-                          인기 메뉴 🔥
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary text-lg">
-                        {menu.price.toLocaleString()}원
-                      </span>
-                      <span className="px-2 py-1 bg-light-green bg-opacity-20 text-primary-green rounded">
-                        {menu.category}
-                      </span>
-                      <span>주문 {menu.orderCount}회</span>
+          {isMenuLoading ? (
+            <div className="text-center py-12 text-text-secondary">메뉴를 불러오는 중입니다...</div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {filteredMenu.map(menu => (
+                  <div
+                    key={menu.id}
+                    className="border border-border-color rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-lg font-bold text-text-primary">{menu.name}</span>
+                          {menu.popular && (
+                            <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-semibold">
+                              인기 메뉴 🔥
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-text-secondary">
+                          <span className="font-semibold text-text-primary text-lg">
+                            {renderPrice(menu.price)}
+                          </span>
+                          <span className="px-2 py-1 bg-light-green bg-opacity-20 text-primary-green rounded">
+                            {categoryLabel(menu.category)}
+                          </span>
+                          <span>주문 {menu.orderCount ?? 0}회</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Edit2 size={16} className="mr-1" />
+                          수정
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-300 text-red-600 hover:bg-red-50"
+                          onClick={() => handleDeleteExistingMenu(menu.id)}
+                        >
+                          <Trash2 size={16} className="mr-1" />
+                          삭제
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button size="sm" variant="outline">
-                      <Edit2 size={16} className="mr-1" />
-                      수정
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => handleDeleteExistingMenu(menu.id)}
-                    >
-                      <Trash2 size={16} className="mr-1" />
-                      삭제
-                    </Button>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {filteredMenu.length === 0 && (
-            <div className="text-center py-12 text-text-secondary">
-              <p>해당 카테고리에 등록된 메뉴가 없습니다</p>
-            </div>
+              {filteredMenu.length === 0 && (
+                <div className="text-center py-12 text-text-secondary">
+                  <p>해당 카테고리에 등록된 메뉴가 없습니다</p>
+                </div>
+              )}
+            </>
           )}
         </Card>
       </div>

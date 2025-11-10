@@ -26,6 +26,13 @@ management:
       exposure:
         include: health,info
 
+ncloud:
+  ocr:
+    invoke-url: ${NCLOUD_OCR_INVOKE_URL:}
+    api-key-id: ${NCLOUD_OCR_API_KEY_ID:}
+    api-key: ${NCLOUD_OCR_API_KEY:}
+    secret-key: ${NCLOUD_OCR_SECRET_KEY:}
+
 ---
 spring:
   config:

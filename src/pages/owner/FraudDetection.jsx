@@ -1,8 +1,10 @@
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { AlertTriangle, Shield, TrendingUp, X } from 'lucide-react';
+import { AlertTriangle, Shield, TrendingUp, X, LogOut } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const mockSuspiciousReservations = [
   {
@@ -70,33 +72,59 @@ const riskLabels = {
 };
 
 function FraudDetection() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header - 프로페셔널 스타일 */}
       <header className="sticky top-0 z-50 border-b bg-white">
         <div className="container mx-auto px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-12">
-            <a href="/" className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">
+            <Link to="/" className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">
               올사람
-            </a>
+            </Link>
             <nav className="hidden md:flex gap-10">
-              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+              <Link
+                to="/owner/dashboard"
+                className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+              >
                 대시보드
-              </a>
-              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+              </Link>
+              <Link
+                to="/owner/reservations"
+                className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+              >
                 예약 관리
-              </a>
-              <a className="text-base text-slate-900 font-semibold border-b-2 border-blue-600 pb-[26px] cursor-pointer">
+              </Link>
+              <Link
+                to="/owner/fraud-detection"
+                className="text-base text-slate-900 font-semibold border-b-2 border-blue-600 pb-[26px] cursor-pointer"
+              >
                 사기 탐지
-              </a>
-              <a className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+              </Link>
+              <Link
+                to="/owner/menu-ocr"
+                className="text-base text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+              >
                 메뉴 관리
-              </a>
+              </Link>
             </nav>
           </div>
-          <Button variant="ghost" className="text-base">
-            홍대 중국집
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" className="text-base">
+              홍대 중국집
+            </Button>
+            <Button variant="outline" className="text-base" onClick={handleLogout}>
+              <LogOut className="w-5 h-5 mr-2" />
+              로그아웃
+            </Button>
+          </div>
         </div>
       </header>
 

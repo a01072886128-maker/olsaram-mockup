@@ -43,7 +43,7 @@ function RequireOwnerAuth({ children }) {
   }
 
   if (status !== 'authenticated') {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

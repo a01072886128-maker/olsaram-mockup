@@ -5,7 +5,7 @@
  * KT 사장님Easy의 깔끔한 디자인 스타일 적용
  */
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar,
   AlertTriangle,
@@ -15,14 +15,23 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Shield
+  Shield,
+  LogOut
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import StatCard from '../../components/StatCard';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
   // 더미 통계 데이터
   const stats = [
     {
@@ -122,7 +131,13 @@ const Dashboard = () => {
               <Link to="/owner/menu-ocr" className="text-text-secondary hover:text-text-primary">메뉴 관리</Link>
             </nav>
           </div>
-          <Button variant="outline" size="sm">홍대 중국집 ▼</Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm">홍대 중국집 ▼</Button>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut size={16} className="mr-1" />
+              로그아웃
+            </Button>
+          </div>
         </div>
       </header>
 

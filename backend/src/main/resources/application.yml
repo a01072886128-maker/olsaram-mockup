@@ -26,6 +26,11 @@ management:
       exposure:
         include: health,info
 
+# OpenAI API Key Configuration
+openai:
+  api:
+    key: ***REMOVED***
+
 ---
 spring:
   config:

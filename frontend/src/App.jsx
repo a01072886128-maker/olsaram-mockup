@@ -11,6 +11,7 @@ import { useAuth } from './contexts/AuthContext.jsx';
 // 페이지 컴포넌트 import
 import Landing from './pages/Landing';
 import OwnerLogin from './pages/auth/OwnerLogin';
+import CustomerLogin from './pages/auth/CustomerLogin';
 import Register from './pages/auth/Register';
 
 // 사장님 페이지
@@ -49,6 +50,24 @@ function RequireOwnerAuth({ children }) {
   return children;
 }
 
+function RequireCustomerAuth({ children }) {
+  const { status } = useAuth();
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-text-secondary">
+        인증 정보를 확인하고 있습니다...
+      </div>
+    );
+  }
+
+  if (status !== 'authenticated') {
+    return <Navigate to="/auth/customer-login" replace />;
+  }
+
+  return children;
+}
+
 function App() {
   return (
     <Router>
@@ -56,6 +75,7 @@ function App() {
         {/* 랜딩 페이지 */}
         <Route path="/" element={<Landing />} />
         <Route path="/auth/login" element={<OwnerLogin />} />
+        <Route path="/auth/customer-login" element={<CustomerLogin />} />
         <Route path="/auth/register" element={<Register />} />
 
         {/* 사장님 페이지 */}
@@ -106,10 +126,38 @@ function App() {
         <Route path="/admin/menu-ocr" element={<AdminMenuOCR />} />
 
         {/* 고객 페이지 */}
-        <Route path="/customer/search" element={<CustomerSearch />} />
-        <Route path="/customer/voice-reservation" element={<VoiceReservation />} />
-        <Route path="/customer/group-reservation" element={<GroupReservation />} />
-        <Route path="/customer/mypage" element={<CustomerMyPage />} />
+        <Route
+          path="/customer/search"
+          element={
+            <RequireCustomerAuth>
+              <CustomerSearch />
+            </RequireCustomerAuth>
+          }
+        />
+        <Route
+          path="/customer/voice-reservation"
+          element={
+            <RequireCustomerAuth>
+              <VoiceReservation />
+            </RequireCustomerAuth>
+          }
+        />
+        <Route
+          path="/customer/group-reservation"
+          element={
+            <RequireCustomerAuth>
+              <GroupReservation />
+            </RequireCustomerAuth>
+          }
+        />
+        <Route
+          path="/customer/mypage"
+          element={
+            <RequireCustomerAuth>
+              <CustomerMyPage />
+            </RequireCustomerAuth>
+          }
+        />
 
         {/* 404 페이지 (없을 경우 랜딩으로 리다이렉트) */}
         <Route path="*" element={<Landing />} />

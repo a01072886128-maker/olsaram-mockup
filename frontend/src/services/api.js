@@ -83,8 +83,12 @@ export const authAPI = {
         throw new Error(data.message || '로그인에 실패했습니다.');
       }
 
-      // 로그인 성공 - 사용자 정보 저장
+      // 로그인 성공 - 토큰과 사용자 정보 저장
       if (data.data) {
+        // 토큰이 있으면 저장
+        if (data.data.token) {
+          localStorage.setItem('token', data.data.token);
+        }
         localStorage.setItem('user', JSON.stringify(data.data));
       }
 

@@ -26,3 +26,4 @@ dist-ssr
 # Ignore API Key files
 **/application.yml
 backend/src/main/resources/application.yml
+.env

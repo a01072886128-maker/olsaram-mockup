@@ -58,7 +58,7 @@ function Register() {
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        businessNumber: formData.businessNumber || '1234567890',
+        businessNumber: formData.role === 'owner' ? formData.businessNumber : '',
       };
 
       const response = await authAPI.register(registerData);

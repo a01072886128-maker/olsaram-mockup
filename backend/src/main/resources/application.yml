@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: OlsaramBackend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    hikari:
+      initialization-fail-timeout: ${SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT:0}
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# OpenAI API Key Configuration
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+
+ncloud:
+  ocr:
+    invoke-url: ${NCLOUD_OCR_INVOKE_URL}
+    api-key-id: ${NCLOUD_OCR_API_KEY_ID}
+    api-key: ${NCLOUD_OCR_API_KEY}
+    secret-key: ${NCLOUD_OCR_SECRET_KEY}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:olsaram_test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: never
+
+  naver:
+    map:
+      client-id: ${NAVER_MAP_CLIENT_ID}
+      client-secret: ${NAVER_MAP_CLIENT_SECRET}

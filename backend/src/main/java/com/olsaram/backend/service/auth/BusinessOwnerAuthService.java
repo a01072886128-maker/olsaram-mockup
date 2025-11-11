@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
@@ -26,7 +27,7 @@ public class BusinessOwnerAuthService {
         if (businessOwnerRepository.existsByLoginId(loginId)) {
             throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
-        if (businessOwnerRepository.existsByBusinessNumber(businessNumber)) {
+        if (StringUtils.hasText(businessNumber) && businessOwnerRepository.existsByBusinessNumber(businessNumber)) {
             throw new IllegalArgumentException("이미 등록된 사업자등록번호입니다.");
         }
 

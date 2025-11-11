@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Ignore API Key files
-src/main/resources/application.yml
+**/application.yml

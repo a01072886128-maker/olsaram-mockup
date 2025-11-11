@@ -27,3 +27,4 @@ dist-ssr
 **/application.yml
 backend/src/main/resources/application.yml
 .env
+backend/.env

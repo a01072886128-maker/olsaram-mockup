@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+  com.olsaram.backend.config.DotenvEnvironmentPostProcessor

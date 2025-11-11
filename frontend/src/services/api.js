@@ -42,9 +42,14 @@ const apiRequest = async (endpoint, options = {}) => {
 // 인증 관련 API
 export const authAPI = {
   // 회원가입
-  register: async (userData) => {
+  register: async (userData, userType = 'owner') => {
     try {
-      const fetchResponse = await fetch(`${API_BASE_URL}/business-owner/auth/register`, {
+      // 사용자 유형에 따라 엔드포인트 결정
+      const endpoint = userType === 'owner'
+        ? `${API_BASE_URL}/business-owner/auth/register`
+        : `${API_BASE_URL}/customer/auth/register`;
+
+      const fetchResponse = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,9 +78,14 @@ export const authAPI = {
   },
 
   // 로그인
-  login: async (credentials) => {
+  login: async (credentials, userType = 'owner') => {
     try {
-      const fetchResponse = await fetch(`${API_BASE_URL}/business-owner/auth/login`, {
+      // 사용자 유형에 따라 엔드포인트 결정
+      const endpoint = userType === 'owner'
+        ? `${API_BASE_URL}/business-owner/auth/login`
+        : `${API_BASE_URL}/customer/auth/login`;
+
+      const fetchResponse = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +112,9 @@ export const authAPI = {
         if (data.data.token) {
           localStorage.setItem('token', data.data.token);
         }
-        localStorage.setItem('user', JSON.stringify(data.data));
+        // 사용자 정보와 함께 사용자 유형 저장
+        const userWithType = { ...data.data, userType };
+        localStorage.setItem('user', JSON.stringify(userWithType));
       }
 
       return data;

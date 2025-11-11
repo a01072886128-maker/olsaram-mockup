@@ -40,4 +40,16 @@ export const menuAPI = {
       throw new Error(message);
     }
   },
+
+  async saveMenuBatch(ownerId, menuItems) {
+    const response = await fetch(`${API_BASE_URL}/save-batch?ownerId=${ownerId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(menuItems),
+    });
+
+    return handleResponse(response);
+  },
 };

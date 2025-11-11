@@ -4,7 +4,7 @@ import com.olsaram.backend.dto.menu.MenuItemResponse;
 import com.olsaram.backend.dto.menu.MenuOcrResponse;
 import com.olsaram.backend.entity.MenuItem;
 import com.olsaram.backend.repository.MenuItemRepository;
-import com.olsaram.backend.service.ocr.ClovaOcrClient;
+import com.olsaram.backend.service.ocr.OpenAiOcrClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,14 +21,17 @@ public class MenuOcrService {
 
     private static final Pattern PRICE_PATTERN = Pattern.compile("(\\d[\\d,\\.]{2,})");
 
-    private final ClovaOcrClient clovaOcrClient;
+    private final OpenAiOcrClient openAiOcrClient;
     private final MenuItemRepository menuItemRepository;
 
-    public MenuOcrService(ClovaOcrClient clovaOcrClient, MenuItemRepository menuItemRepository) {
-        this.clovaOcrClient = clovaOcrClient;
+    public MenuOcrService(OpenAiOcrClient openAiOcrClient, MenuItemRepository menuItemRepository) {
+        this.openAiOcrClient = openAiOcrClient;
         this.menuItemRepository = menuItemRepository;
     }
 
+    /**
+     * 메뉴 이미지 OCR 처리 (DB 저장 없이 인식 결과만 반환)
+     */
     public MenuOcrResponse processMenuImage(Long ownerId, MultipartFile imageFile) {
         if (ownerId == null) {
             throw new IllegalArgumentException("ownerId는 필수입니다.");
@@ -40,22 +43,49 @@ public class MenuOcrService {
 
         try {
             byte[] imageBytes = imageFile.getBytes();
-            String format = clovaOcrClient.detectFormat(imageFile.getContentType(), imageFile.getOriginalFilename());
-            List<ClovaOcrClient.OcrField> ocrFields = clovaOcrClient.extractText(imageBytes, format);
+            String format = openAiOcrClient.detectFormat(imageFile.getContentType(), imageFile.getOriginalFilename());
+            List<OpenAiOcrClient.OcrField> ocrFields = openAiOcrClient.extractText(imageBytes, format);
 
             List<MenuItem> parsedItems = parseFields(ownerId, ocrFields, imageFile.getOriginalFilename());
             if (parsedItems.isEmpty()) {
                 return new MenuOcrResponse("인식된 메뉴가 없습니다. 메뉴판 이미지를 다시 한번 확인해주세요.", List.of());
             }
 
-            List<MenuItemResponse> savedItems = menuItemRepository.saveAll(parsedItems).stream()
+            // DB에 저장하지 않고 MenuItemResponse로 변환하여 반환
+            List<MenuItemResponse> menuItems = parsedItems.stream()
                     .map(MenuItemResponse::from)
                     .toList();
 
-            return new MenuOcrResponse("메뉴판 인식이 완료되었습니다.", savedItems);
+            return new MenuOcrResponse("메뉴판 인식이 완료되었습니다. 확인 후 저장해주세요.", menuItems);
         } catch (IOException e) {
             throw new IllegalStateException("이미지 파일을 읽을 수 없습니다.");
         }
+    }
+
+    /**
+     * 메뉴 목록 일괄 저장
+     */
+    public List<MenuItemResponse> saveMenuItems(Long ownerId, List<MenuItem> menuItems) {
+        if (ownerId == null) {
+            throw new IllegalArgumentException("ownerId는 필수입니다.");
+        }
+
+        if (menuItems == null || menuItems.isEmpty()) {
+            throw new IllegalArgumentException("저장할 메뉴가 없습니다.");
+        }
+
+        // ownerId 검증
+        for (MenuItem menuItem : menuItems) {
+            if (!Objects.equals(menuItem.getOwnerId(), ownerId)) {
+                throw new IllegalArgumentException("권한이 없는 메뉴 항목이 포함되어 있습니다.");
+            }
+        }
+
+        List<MenuItemResponse> savedItems = menuItemRepository.saveAll(menuItems).stream()
+                .map(MenuItemResponse::from)
+                .toList();
+
+        return savedItems;
     }
 
     public List<MenuItemResponse> fetchMenus(Long ownerId) {
@@ -82,10 +112,10 @@ public class MenuOcrService {
         });
     }
 
-    private List<MenuItem> parseFields(Long ownerId, List<ClovaOcrClient.OcrField> fields, String originalFilename) {
+    private List<MenuItem> parseFields(Long ownerId, List<OpenAiOcrClient.OcrField> fields, String originalFilename) {
         List<MenuItem> items = new ArrayList<>();
 
-        for (ClovaOcrClient.OcrField field : fields) {
+        for (OpenAiOcrClient.OcrField field : fields) {
             if (field.text() == null || field.text().isBlank()) {
                 continue;
             }

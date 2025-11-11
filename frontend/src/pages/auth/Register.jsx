@@ -44,8 +44,9 @@ function Register() {
       return;
     }
 
-    if (formData.password.length < 4) {
-      setFormError('비밀번호는 최소 4자 이상이어야 합니다.');
+    // 비밀번호 숫자 4자리 검증
+    if (!/^\d{4}$/.test(formData.password)) {
+      setFormError('비밀번호는 숫자 4자리여야 합니다.');
       return;
     }
 
@@ -58,10 +59,15 @@ function Register() {
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        businessNumber: formData.role === 'owner' ? formData.businessNumber : '',
       };
 
-      const response = await authAPI.register(registerData);
+      // 사업자인 경우에만 사업자등록번호 추가
+      if (formData.role === 'owner') {
+        registerData.businessNumber = formData.businessNumber;
+      }
+
+      // 사용자 유형에 따라 올바른 엔드포인트로 API 호출
+      const response = await authAPI.register(registerData, formData.role);
 
       if (response.success) {
         alert('회원가입이 완료되었습니다!');
@@ -198,6 +204,23 @@ function Register() {
               disabled={isSubmitting}
             />
           </div>
+
+          {formData.role === 'owner' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-primary" htmlFor="businessNumber">
+                사업자등록번호 <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="businessNumber"
+                name="businessNumber"
+                placeholder="123-45-67890"
+                value={formData.businessNumber}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                required={formData.role === 'owner'}
+              />
+            </div>
+          )}
 
           {formError && <p className="text-sm text-red-500">{formError}</p>}
 

@@ -1,5 +1,6 @@
-// API 기본 설정 - Vite 프록시를 통해 요청
-const API_BASE_URL = '/api';
+// API 기본 설정
+const envApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE_URL = envApiBase?.replace(/\/$/, '') || '/api';
 
 // LocalStorage에서 토큰 가져오기
 const getToken = () => {

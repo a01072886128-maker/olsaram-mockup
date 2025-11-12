@@ -26,3 +26,4 @@ dist-ssr
 # Ignore API Key files
 .env
 backend/.env
+frontend/.env

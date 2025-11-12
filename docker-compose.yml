@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: olsaram-backend:latest
+    ports:
+      - "8080:8080"
+    env_file:
+      - backend/.env
+    environment:
+      - DB_URL
+      - DB_USERNAME
+      - DB_PASSWORD
+      - SERVER_PORT=8080
+      - FRONTEND_ASSET_URL
+    volumes:
+      - backend-logs:/app/logs
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: olsaram-frontend:latest
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8080
+
+volumes:
+  backend-logs:

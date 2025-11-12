@@ -337,8 +337,8 @@ Phase 2에서는 다음 기능들이 구현될 예정입니다:
 3. **메뉴 OCR** - 이미지 업로드 및 OCR 처리
 4. **커뮤니티** - 게시판 및 댓글 시스템
 5. **음성 예약** - 음성 인식 및 자동 예약 처리
-6. **공유 예약** - 링크 공유 및 다중 사용자 주문
-7. **마이페이지** - 리워드, 쿠폰, 예약 이력 관리
+  6. **공유 예약** - 링크 공유 및 다중 사용자 주문
+  7. **마이페이지** - 리워드, 쿠폰, 예약 이력 관리
 
 ## 🤝 기여하기
 
@@ -357,3 +357,11 @@ Phase 2에서는 다음 기능들이 구현될 예정입니다:
 **Made with ❤️ by 올사람 팀**
 
 *약속을 지키는 사람들, 올사람*
+
+## 🐳 Docker 배포 흐름
+
+1. `backend/Dockerfile`은 Gradle로 `bootJar`를 만든 뒤 OpenJDK 컨테이너에서 `jar`를 실행하고, Object Storage에 올린 `frontend/dist` 번들을 `FRONTEND_ASSET_URL` 환경변수로 내려받아 `classpath:/static`으로 복사합니다.
+2. `frontend/Dockerfile`은 Vite를 빌드한 정적 결과물을 Nginx로 서빙하며, `/api` 요청을 `backend` 컨테이너로 프록시 처리하도록 설정했습니다.
+3. 로컬에서 `docker compose up --build`를 쓰거나 `scripts/docker-build-push.sh <registry> [tag]`로 이미지를 빌드/푸시하고, `scripts/deploy-containers.sh <registry> [tag]`로 서버에서 최신 이미지로 교체할 수 있습니다.
+4. `backend/.env.example`을 참고해 MySQL 접속 정보와 `FRONTEND_ASSET_URL`(Object Storage의 `dist` tarball URL)을 채운 `.env`를 `backend/.env`로 복사해서 사용하세요.
+5. 업데이트는 코드 수정 → `scripts/docker-build-push.sh` → `scripts/deploy-containers.sh` 순서로 하면 되고, 롤백하려면 이전 태그를 `deploy` 스크립트에 전달하면 됩니다.

@@ -1,0 +1,4 @@
+backend/build
+frontend/dist
+node_modules
+tmp

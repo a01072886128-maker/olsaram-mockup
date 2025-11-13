@@ -22,8 +22,14 @@ public class ReservationData {
     @Column(name = "CUSTOMER_NAME")
     private String customerName;
 
+    @Column(name = "PHONE_NUMBER")
+    private String phoneNumber;
+
     @Column(name = "DATE_TIME")
     private String dateTime;
+
+    @Column(name = "PARTY_SIZE")
+    private Integer partySize;
 
     @Column(name = "AMOUNT")
     private Double amount;
@@ -58,13 +64,13 @@ public class ReservationData {
     @Column(name = "EVENT_NEARBY")
     private String eventNearby;
 
-    // ✅ 추가된 필드 (AI 예측 결과 저장용)
+    // AI 결과 저장
     @Column(name = "RISK_SCORE")
-    private Double riskScore; // 0.0 ~ 1.0 예측 확률
+    private Double riskScore;
 
     @Column(name = "LABEL")
-    private Integer label; // 1=노쇼 위험 / 0=정상
+    private Integer label;
 
     @Column(name = "REASON", columnDefinition = "TEXT")
-    private String reason; // 예측 사유
+    private String reason;
 }

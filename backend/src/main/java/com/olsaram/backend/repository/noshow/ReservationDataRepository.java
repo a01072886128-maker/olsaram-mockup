@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 import com.olsaram.backend.entity.noshow.ReservationData;
 
 @Repository
-public interface ReservationDataRepository extends JpaRepository<ReservationData, Long> {
+public interface ReservationDataRepository extends JpaRepository<ReservationData, String> {
 }

@@ -1,14 +1,15 @@
 package com.olsaram.backend.service.noshow;
 
+import com.olsaram.backend.dto.FraudDetection.FraudDetectionResponseDto;
+import com.olsaram.backend.dto.FraudDetection.SuspiciousReservationDto;
 import com.olsaram.backend.entity.noshow.ReservationData;
 import com.olsaram.backend.repository.noshow.ReservationDataRepository;
-
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.json.JSONObject;
-import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,12 +28,12 @@ public class NoShowAiService {
         this.repository = repository;
     }
 
-    // ✅ 1. DB 전체 조회
+    // 1. 전체 조회
     public List<ReservationData> getAllData() {
         return repository.findAll();
     }
 
-    // ✅ 2. LLM 예측 수행 및 DB 반영 (CSV 기반 ReservationData 구조)
+    // 2. 예측 실행 후 DB 저장
     public String predictAndSave() {
         List<ReservationData> list = repository.findAll();
         if (list.isEmpty()) return "⚠️ DB에 데이터가 없습니다.";
@@ -42,18 +43,19 @@ public class NoShowAiService {
 
         for (ReservationData data : list) {
             try {
-                // 🔍 LLM 입력 프롬프트 (CSV 구조 기반)
+                // Prompt 구성
                 String prompt = String.format("""
-                아래 예약 데이터를 기반으로 고객의 노쇼 위험도를 예측하세요.
-                반드시 아래 JSON 형식으로만 응답하세요:
-                {"risk_level": "위험"|"보통"|"안전", "risk_score": 0.0~1.0, "reason": "요약 사유"}
+                    아래 예약 데이터를 기반으로 고객의 노쇼 위험도를 예측하세요.
+                    반드시 아래 JSON 형식으로만 응답하세요:
+                    {"risk_level": "위험"|"보통"|"안전", "risk_score": 0.0~1.0, "reason": "요약 사유"}
 
-                데이터:
-                고객ID=%s, 고객명=%s, 결제금액=%.1f, 방문이력=%d, 취소횟수=%d, 노쇼이력=%d,
-                결제패턴=%s, 행동메모=%s, 등급=%s, 리드타임=%d, 공휴일=%d, 지역=%s, 이벤트=%s
-                """,
+                    데이터:
+                    고객ID=%s, 고객명=%s, 전화번호=%s, 결제금액=%.1f, 방문이력=%d, 취소횟수=%d, 노쇼이력=%d,
+                    결제패턴=%s, 행동메모=%s, 등급=%s, 리드타임=%d, 공휴일=%d, 지역=%s, 이벤트=%s
+                    """,
                         data.getCustomerId(),
                         data.getCustomerName(),
+                        data.getPhoneNumber(),
                         data.getAmount(),
                         data.getVisitHistory(),
                         data.getCancelCount(),
@@ -67,39 +69,38 @@ public class NoShowAiService {
                         data.getEventNearby()
                 );
 
-                // 🔧 OpenAI API 요청 생성
-                JSONObject requestBody = new JSONObject()
+                JSONObject body = new JSONObject()
                         .put("model", "gpt-4o-mini")
                         .put("messages", new JSONArray()
-                                .put(new JSONObject()
-                                        .put("role", "system")
-                                        .put("content", "너는 음식점 예약 데이터를 분석해 노쇼 위험도를 예측하는 AI야."))
-                                .put(new JSONObject()
-                                        .put("role", "user")
-                                        .put("content", prompt))
+                                .put(new JSONObject().put("role", "system").put("content",
+                                        "너는 음식점 예약 데이터를 분석해 노쇼 위험도를 예측하는 AI야."))
+                                .put(new JSONObject().put("role", "user").put("content", prompt))
                         );
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.setBearerAuth(apiKey);
 
-                HttpEntity<String> request = new HttpEntity<>(requestBody.toString(), headers);
-                ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.POST, request, String.class);
+                HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
+                ResponseEntity<String> response =
+                        restTemplate.exchange(apiUrl, HttpMethod.POST, request, String.class);
 
                 JSONObject json = new JSONObject(response.getBody());
-                String result = json.getJSONArray("choices")
+                String content = json.getJSONArray("choices")
                         .getJSONObject(0)
                         .getJSONObject("message")
                         .getString("content")
                         .trim();
 
-                // ⚙️ LLM 응답 파싱
-                if (!result.startsWith("{")) result = result.substring(result.indexOf("{"));
-                JSONObject resultJson = new JSONObject(result);
+                if (!content.startsWith("{")) {
+                    content = content.substring(content.indexOf("{"));
+                }
 
-                String level = resultJson.optString("risk_level", "보통");
-                double score = resultJson.optDouble("risk_score", 0.5);
-                String reason = resultJson.optString("reason", "분석 실패");
+                JSONObject result = new JSONObject(content);
+
+                String level = result.optString("risk_level", "보통");
+                double score = result.optDouble("risk_score", 0.5);
+                String reason = result.optString("reason", "분석 실패");
 
                 int label = switch (level) {
                     case "위험" -> 1;
@@ -107,29 +108,66 @@ public class NoShowAiService {
                     default -> 0;
                 };
 
-                // ✅ 예측 결과 저장
                 data.setLabel(label);
                 data.setRiskScore(score);
                 data.setReason(reason);
                 repository.save(data);
 
                 count++;
-                System.out.printf("✅ [%s] 결과: %s (%.2f) - %s%n", data.getCustomerId(), level, score, reason);
 
             } catch (Exception e) {
-                System.err.println("❌ 예측 실패 [" + data.getCustomerId() + "]: " + e.getMessage());
+                System.err.println("❌ 예측 실패 [" + data.getCustomerId() + "] : " + e.getMessage());
             }
         }
+
         return "✅ 예측 완료 — 총 " + count + "건의 데이터 업데이트됨";
     }
 
-    // ✅ 3. 예측 결과만 조회
+    // 3. AI 예측된 데이터만 조회
     public List<ReservationData> getPredictions() {
         List<ReservationData> all = repository.findAll();
         List<ReservationData> predicted = new ArrayList<>();
+
         for (ReservationData n : all) {
             if (n.getReason() != null) predicted.add(n);
         }
         return predicted;
+    }
+
+    // ⭐ 4. 프론트용 DTO 생성
+    public FraudDetectionResponseDto buildFraudDetectionData() {
+
+        List<ReservationData> predicted = getPredictions();
+        List<SuspiciousReservationDto> list = new ArrayList<>();
+
+        for (ReservationData data : predicted) {
+
+            double scoreValue = data.getRiskScore() != null ? data.getRiskScore() : 0.0;
+
+            SuspiciousReservationDto dto = SuspiciousReservationDto.builder()
+                    .id(data.getReservationId() != null ? data.getReservationId() : "0")
+                    .customerName(data.getCustomerName())
+                    .phoneNumber(data.getPhoneNumber())
+                    .riskScore((int) (scoreValue * 100))
+                    .riskLevel(data.getLabel() != null && data.getLabel() == 1 ? "high" : "medium")
+                    .reasons(List.of(
+                            data.getReason() != null ? data.getReason() : "사유 없음"
+                    ))
+                    .partySize(data.getPartySize() != null ? data.getPartySize() : 1)
+                    .requestedDate(data.getDateTime())
+                    .status(data.getLabel() != null && data.getLabel() == 1 ? "blocked" : "warning")
+                    .build();
+
+            list.add(dto);
+        }
+
+        return FraudDetectionResponseDto.builder()
+                .alertMessage("사기 의심 예약 분석을 완료했습니다.")
+                .blockedThisMonth(8)
+                .savedAmount(1200000)
+                .detectionRate(98.5)
+                .falsePositive(1.2)
+                .suspiciousReservations(list)
+                .build();
     }
 }

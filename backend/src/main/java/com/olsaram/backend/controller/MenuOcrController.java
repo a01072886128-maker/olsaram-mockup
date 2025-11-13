@@ -2,6 +2,7 @@ package com.olsaram.backend.controller;
 
 import com.olsaram.backend.dto.menu.MenuItemResponse;
 import com.olsaram.backend.dto.menu.MenuOcrResponse;
+import com.olsaram.backend.dto.menu.MenuSaveRequest;
 import com.olsaram.backend.service.MenuOcrService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +33,15 @@ public class MenuOcrController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<MenuOcrResponse> uploadMenuImage(
-            @RequestParam("ownerId") Long ownerId,
+            @RequestParam Long ownerId,
+            @RequestParam Long businessId,
             @RequestPart("image") MultipartFile image
     ) {
         try {
-            log.info("메뉴 이미지 업로드 요청 - ownerId: {}, fileName: {}, size: {}",
-                ownerId, image.getOriginalFilename(), image.getSize());
+            log.info("메뉴 이미지 업로드 요청 - ownerId: {}, businessId: {}, fileName: {}, size: {}",
+                ownerId, businessId, image.getOriginalFilename(), image.getSize());
 
-            MenuOcrResponse response = menuOcrService.processMenuImage(ownerId, image);
+            MenuOcrResponse response = menuOcrService.processMenuImage(ownerId, businessId, image);
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
@@ -60,18 +62,21 @@ public class MenuOcrController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MenuItemResponse>> fetchMenus(@RequestParam("ownerId") Long ownerId) {
-        return ResponseEntity.ok(menuOcrService.fetchMenus(ownerId));
+    public ResponseEntity<List<MenuItemResponse>> fetchMenus(
+            @RequestParam Long ownerId,
+            @RequestParam Long businessId) {
+        return ResponseEntity.ok(menuOcrService.fetchMenusByBusiness(ownerId, businessId));
     }
 
     @PostMapping("/save-batch")
     public ResponseEntity<List<MenuItemResponse>> saveMenuBatch(
-            @RequestParam("ownerId") Long ownerId,
-            @RequestBody List<com.olsaram.backend.entity.MenuItem> menuItems
+            @RequestParam Long ownerId,
+            @RequestParam Long businessId,
+            @RequestBody List<MenuSaveRequest> menuRequests
     ) {
         try {
-            log.info("메뉴 일괄 저장 요청 - ownerId: {}, 항목 수: {}", ownerId, menuItems.size());
-            List<MenuItemResponse> savedItems = menuOcrService.saveMenuItems(ownerId, menuItems);
+            log.info("메뉴 일괄 저장 요청 - ownerId: {}, businessId: {}, 항목 수: {}", ownerId, businessId, menuRequests.size());
+            List<MenuItemResponse> savedItems = menuOcrService.saveMenuItems(ownerId, businessId, menuRequests);
             return ResponseEntity.ok(savedItems);
 
         } catch (IllegalArgumentException e) {
@@ -87,7 +92,7 @@ public class MenuOcrController {
     @DeleteMapping("/{menuId}")
     public ResponseEntity<Void> deleteMenu(
             @PathVariable Long menuId,
-            @RequestParam("ownerId") Long ownerId
+            @RequestParam Long ownerId
     ) {
         menuOcrService.deleteMenu(ownerId, menuId);
         return ResponseEntity.noContent().build();

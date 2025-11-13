@@ -10,9 +10,10 @@ const handleResponse = async (response) => {
 };
 
 export const menuAPI = {
-  async uploadMenuImage({ ownerId, file }) {
+  async uploadMenuImage({ ownerId, businessId, file }) {
     const formData = new FormData();
     formData.append('ownerId', ownerId);
+    formData.append('businessId', businessId);
     formData.append('image', file);
 
     const response = await fetch(`${API_BASE_URL}/upload`, {
@@ -23,8 +24,8 @@ export const menuAPI = {
     return handleResponse(response);
   },
 
-  async fetchMenus(ownerId) {
-    const params = new URLSearchParams({ ownerId });
+  async fetchMenus(ownerId, businessId) {
+    const params = new URLSearchParams({ ownerId, businessId });
     const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
     return handleResponse(response);
   },
@@ -41,8 +42,8 @@ export const menuAPI = {
     }
   },
 
-  async saveMenuBatch(ownerId, menuItems) {
-    const response = await fetch(`${API_BASE_URL}/save-batch?ownerId=${ownerId}`, {
+  async saveMenuBatch(ownerId, businessId, menuItems) {
+    const response = await fetch(`${API_BASE_URL}/save-batch?ownerId=${ownerId}&businessId=${businessId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

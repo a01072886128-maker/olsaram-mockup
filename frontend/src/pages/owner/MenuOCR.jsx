@@ -29,11 +29,15 @@ const MenuOCR = () => {
   const { user } = useAuth();
   const ownerId = user?.ownerId;
 
+  // TODO: 실제 비즈니스 선택 기능 추가 필요
+  // 현재는 임시로 businessId를 1로 설정
+  // eslint-disable-next-line no-unused-vars
+  const [businessId, setBusinessId] = useState(1);
+
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState([]); // 임시 OCR 결과 (아직 DB에 저장되지 않음)
   const [isSaving, setIsSaving] = useState(false); // 저장 중 상태
-  const [selectedCategory, setSelectedCategory] = useState("전체");
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -44,16 +48,14 @@ const MenuOCR = () => {
   const [uploadedImage, setUploadedImage] = useState(null);
   const fileInputRef = useRef(null);
 
-  const categories = ["전체", "중식", "한식", "일식", "양식", "음료", "미분류"];
-
   const fetchExistingMenus = useCallback(async () => {
-    if (!ownerId) {
+    if (!ownerId || !businessId) {
       return;
     }
 
     setIsMenuLoading(true);
     try {
-      const data = await menuAPI.fetchMenus(ownerId);
+      const data = await menuAPI.fetchMenus(ownerId, businessId);
       setExistingMenu(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
@@ -65,7 +67,7 @@ const MenuOCR = () => {
     } finally {
       setIsMenuLoading(false);
     }
-  }, [ownerId]);
+  }, [ownerId, businessId]);
 
   useEffect(() => {
     fetchExistingMenus();
@@ -110,7 +112,7 @@ const MenuOCR = () => {
     setIsProcessing(true);
 
     try {
-      const response = await menuAPI.uploadMenuImage({ ownerId, file });
+      const response = await menuAPI.uploadMenuImage({ ownerId, businessId, file });
       // OCR 결과를 임시 상태로 저장 (DB에 저장되지 않음)
       setOcrResult(response?.items ?? []);
       setToast({
@@ -153,19 +155,22 @@ const MenuOCR = () => {
     setIsSaving(true);
 
     try {
-      // OCR 결과를 MenuItem 형식으로 변환
-      const menuItems = ocrResult.map((item) => ({
-        ownerId,
-        name: item.name,
+      // OCR 결과를 Menu 형식으로 변환
+      const menus = ocrResult.map((item) => ({
+        menuName: item.name,
         price: item.price,
         category: item.category || "미분류",
         confidence: item.confidence,
         status: item.status,
         rawText: item.rawText,
         sourceImage: item.sourceImage,
+        isAvailable: true,
+        isPopular: false,
+        displayOrder: 0,
+        orderCount: 0,
       }));
 
-      await menuAPI.saveMenuBatch(ownerId, menuItems);
+      await menuAPI.saveMenuBatch(ownerId, businessId, menus);
 
       setToast({
         show: true,
@@ -175,6 +180,7 @@ const MenuOCR = () => {
 
       // 저장 후 OCR 결과 초기화 및 기존 메뉴 목록 새로고침
       setOcrResult([]);
+      setUploadedImage(null);
       await fetchExistingMenus();
     } catch (error) {
       console.error(error);
@@ -248,13 +254,8 @@ const MenuOCR = () => {
   };
 
 
-  // 필터된 메뉴
-  const filteredMenu =
-    selectedCategory === "전체"
-      ? existingMenu
-      : existingMenu.filter(
-          (item) => categoryLabel(item.category) === selectedCategory
-        );
+  // 메뉴 목록 (필터링 없음)
+  const filteredMenu = existingMenu;
 
   // 인식 정확도 계산
   const accuracy =
@@ -529,23 +530,6 @@ const MenuOCR = () => {
               <Plus size={16} className="mr-1" />
               메뉴 직접 추가
             </Button>
-          </div>
-
-          {/* 카테고리 필터 */}
-          <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors whitespace-nowrap ${
-                  selectedCategory === category
-                    ? "bg-primary-green text-white"
-                    : "bg-gray-100 text-text-secondary hover:bg-gray-200"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
           </div>
 
           {/* 메뉴 목록 */}

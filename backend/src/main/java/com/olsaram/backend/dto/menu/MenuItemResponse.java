@@ -1,6 +1,6 @@
 package com.olsaram.backend.dto.menu;
 
-import com.olsaram.backend.entity.MenuItem;
+import com.olsaram.backend.domain.business.Menu;
 
 import java.time.LocalDateTime;
 
@@ -16,18 +16,19 @@ public class MenuItemResponse {
     private String rawText;
     private LocalDateTime createdAt;
 
-    public static MenuItemResponse from(MenuItem menuItem) {
+    public static MenuItemResponse from(Menu menu) {
         MenuItemResponse response = new MenuItemResponse();
-        response.setId(menuItem.getId());
-        response.setName(menuItem.getName());
-        response.setPrice(menuItem.getPrice());
-        response.setCategory(menuItem.getCategory());
-        response.setConfidence(menuItem.getConfidence());
-        response.setStatus(menuItem.getStatus());
-        response.setPopular(Boolean.TRUE.equals(menuItem.getPopular()));
-        response.setOrderCount(menuItem.getOrderCount());
-        response.setRawText(menuItem.getRawText());
-        response.setCreatedAt(menuItem.getCreatedAt());
+        response.setId(menu.getMenuId());
+        response.setName(menu.getMenuName());
+        // BigDecimal -> Integer 변환
+        response.setPrice(menu.getPrice() != null ? menu.getPrice().intValue() : null);
+        response.setCategory(menu.getCategory());
+        response.setConfidence(menu.getConfidence());
+        response.setStatus(menu.getStatus());
+        response.setPopular(Boolean.TRUE.equals(menu.getIsPopular()));
+        response.setOrderCount(menu.getOrderCount());
+        response.setRawText(menu.getRawText());
+        response.setCreatedAt(menu.getCreatedAt());
         return response;
     }
 

@@ -52,15 +52,19 @@ public class Business {
     private String openingHours;
 
     @Column(name = "is_open")
+    @Builder.Default
     private Boolean isOpen = true;
 
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "average_rating", precision = 3, scale = 2)
+    @Builder.Default
     private BigDecimal averageRating = BigDecimal.ZERO;
 
     @Column(name = "review_count")
+    @Builder.Default
     private Integer reviewCount = 0;
 
     @Column(precision = 10, scale = 8)
@@ -70,15 +74,19 @@ public class Business {
     private BigDecimal longitude;
 
     @Column(name = "total_reservations")
+    @Builder.Default
     private Integer totalReservations = 0;
 
     @Column(name = "completed_reservations")
+    @Builder.Default
     private Integer completedReservations = 0;
 
     @Column(name = "no_show_count")
+    @Builder.Default
     private Integer noShowCount = 0;
 
     @Column(name = "monthly_revenue")
+    @Builder.Default
     private Long monthlyRevenue = 0L;
 
     @Column(name = "created_at", updatable = false)

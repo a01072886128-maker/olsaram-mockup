@@ -45,24 +45,29 @@ public class BusinessOwner {
     private String businessNumber;
 
     @Column(name = "is_verified")
+    @Builder.Default
     private Boolean isVerified = false;
 
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
     @Column(name = "subscription_plan", length = 20)
+    @Builder.Default
     private String subscriptionPlan = "FREE";
 
     @Column(name = "subscription_expires_at")
     private LocalDateTime subscriptionExpiresAt;
 
     @Column(name = "max_business_count")
+    @Builder.Default
     private Integer maxBusinessCount = 1;
 
     @Column(name = "total_business_count")
+    @Builder.Default
     private Integer totalBusinessCount = 0;
 
     @Column(name = "total_revenue")
+    @Builder.Default
     private Long totalRevenue = 0L;
 
     @Column(name = "created_at", updatable = false)

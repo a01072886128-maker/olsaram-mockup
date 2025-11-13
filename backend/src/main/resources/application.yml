@@ -1,4 +1,7 @@
 spring:
+  config:
+    import:
+      - optional:dotenv:../.env
   application:
     name: OlsaramBackend
   datasource:
@@ -62,7 +65,7 @@ spring:
     init:
       mode: never
 
-  naver:
-    map:
-      client-id: ${NAVER_MAP_CLIENT_ID}
-      client-secret: ${NAVER_MAP_CLIENT_SECRET}
+naver:
+  map:
+    client-id: ${NAVER_MAP_CLIENT_ID}
+    client-secret: ${NAVER_MAP_CLIENT_SECRET}

@@ -1,7 +1,7 @@
 package com.olsaram.backend.controller.map;
 
+import com.olsaram.backend.domain.business.Business;
 import com.olsaram.backend.dto.map.MapSearchResponse;
-import com.olsaram.backend.entity.Business;
 import com.olsaram.backend.repository.business.MapBusinessRepository;
 
 import lombok.RequiredArgsConstructor;

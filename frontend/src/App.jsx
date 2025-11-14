@@ -31,6 +31,7 @@ import CustomerSearch from './pages/customer/Search';
 import VoiceReservation from './pages/customer/VoiceReservation';
 import GroupReservation from './pages/customer/GroupReservation';
 import CustomerMyPage from './pages/customer/MyPage';
+import NearbyStores from './pages/customer/NearbyStores';
 
 function RequireOwnerAuth({ children }) {
   const { status } = useAuth();
@@ -131,6 +132,14 @@ function App() {
           element={
             <RequireCustomerAuth>
               <CustomerSearch />
+            </RequireCustomerAuth>
+          }
+        />
+        <Route
+          path="/customer/nearby"
+          element={
+            <RequireCustomerAuth>
+              <NearbyStores />
             </RequireCustomerAuth>
           }
         />

@@ -137,7 +137,10 @@ export const authAPI = {
 
   // 현재 로그인 상태 확인
   isAuthenticated: () => {
-    return !!getToken();
+    // 토큰이 있거나 사용자 정보가 있으면 인증된 것으로 간주
+    const hasToken = !!getToken();
+    const hasUser = !!localStorage.getItem('user');
+    return hasToken || hasUser;
   },
 
   // 저장된 사용자 정보 가져오기

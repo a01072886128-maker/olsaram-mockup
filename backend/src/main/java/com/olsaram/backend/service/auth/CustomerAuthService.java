@@ -121,10 +121,23 @@ public class CustomerAuthService {
      */
     @Transactional
     public Customer login(String loginId, String password) {
-        Customer customer = customerRepository.findByLoginId(loginId)
-            .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 잘못되었습니다."));
+        System.out.println("=== Customer Login Debug ===");
+        System.out.println("Login ID: " + loginId);
+        System.out.println("Password (input): " + password);
 
-        if (!passwordEncoder.matches(password, customer.getPassword())) {
+        Customer customer = customerRepository.findByLoginId(loginId)
+            .orElseThrow(() -> {
+                System.out.println("Customer not found for loginId: " + loginId);
+                return new IllegalArgumentException("아이디 또는 비밀번호가 잘못되었습니다.");
+            });
+
+        System.out.println("Customer found: " + customer.getLoginId());
+        System.out.println("Password (DB): " + customer.getPassword());
+
+        boolean passwordMatches = passwordEncoder.matches(password, customer.getPassword());
+        System.out.println("Password matches: " + passwordMatches);
+
+        if (!passwordMatches) {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 잘못되었습니다.");
         }
 

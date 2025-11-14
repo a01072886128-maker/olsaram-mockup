@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   MapPin,
   Star,
@@ -15,15 +15,25 @@ import {
   Clock,
   Users,
   Tag,
-  Search as SearchIcon
+  Search as SearchIcon,
+  LogOut
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
-import Button from '../../components/Button';
+import CustomButton from '../../components/Button';
+import { Button } from '../../components/ui/button';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Search = () => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
 
   // 음식 카테고리
   const categories = ['전체', '한식', '중식', '일식', '양식', '카페', '분식'];
@@ -125,17 +135,31 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header - KT 스타일 */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/">
-            <h1 className="text-2xl font-bold text-text-primary">올사람</h1>
-          </Link>
-          <div className="flex gap-3">
-            <Link to="/customer/my-page">
-              <Button size="sm" variant="outline">마이페이지</Button>
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="text-xl font-bold text-slate-900 hover:text-blue-600 transition-colors">
+              올사람
             </Link>
-            <Button size="sm">내 예약</Button>
+            <nav className="hidden md:flex gap-6">
+              <Link to="/customer/search" className="text-sm text-slate-900 font-semibold border-b-2 border-blue-600 pb-4">
+                가게 검색
+              </Link>
+              <Link to="/customer/nearby" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                내 주변 맛집
+              </Link>
+              <Link to="/customer/mypage" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                마이페이지
+              </Link>
+            </nav>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-600">{user?.name || '고객'}님</span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-1" />
+              로그아웃
+            </Button>
           </div>
         </div>
       </header>
@@ -273,14 +297,14 @@ const Search = () => {
                   </div>
 
                   {/* 예약 버튼 */}
-                  <Button
+                  <CustomButton
                     variant="primary"
                     className="w-full"
                     disabled={!restaurant.openNow}
                   >
                     <Clock className="mr-2" size={18} />
                     지금 예약하기
-                  </Button>
+                  </CustomButton>
                 </div>
               </Card>
             ))}

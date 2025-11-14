@@ -37,12 +37,12 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
 
   const login = useCallback(
-    async (credentials) => {
+    async (credentials, userType = 'owner') => {
       try {
         setStatus('loading');
         setError(null);
 
-        const response = await authAPI.login(credentials);
+        const response = await authAPI.login(credentials, userType);
         const nextUser = extractUser(response) ?? authAPI.getCurrentUser();
 
         setUser(nextUser ?? null);

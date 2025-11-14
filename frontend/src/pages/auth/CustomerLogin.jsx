@@ -16,7 +16,7 @@ function CustomerLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (status === 'authenticated') {
-    return <Navigate to="/customer/search" replace />;
+    return <Navigate to="/customer/nearby" replace />;
   }
 
   const handleSubmit = async (event) => {
@@ -31,26 +31,26 @@ function CustomerLogin() {
     setIsSubmitting(true);
     try {
       const user = await login({
-        userId: userId,
+        loginId: userId,
         password,
-      });
+      }, 'customer'); // 고객 타입으로 로그인
 
       // 고객으로 로그인하면 고객 페이지로 이동
       if (user && user.role) {
         const role = user.role.toLowerCase();
 
         if (role === 'user' || role === 'customer') {
-          navigate('/customer/search', { replace: true });
+          navigate('/customer/nearby', { replace: true });
         } else if (role === 'owner') {
           navigate('/owner/dashboard', { replace: true });
         } else if (role === 'admin') {
           navigate('/admin/fraud-detection', { replace: true });
         } else {
           // 기본적으로 고객 페이지로
-          navigate('/customer/search', { replace: true });
+          navigate('/customer/nearby', { replace: true });
         }
       } else {
-        navigate('/customer/search', { replace: true });
+        navigate('/customer/nearby', { replace: true });
       }
     } catch (err) {
       setFormError(err?.message ?? '로그인에 실패했습니다. 다시 시도해 주세요.');

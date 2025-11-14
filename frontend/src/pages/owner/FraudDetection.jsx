@@ -44,7 +44,7 @@ function FraudDetection() {
   // ⭐ API 호출
   useEffect(() => {
     axios
-      .post("http://localhost:8080/api/noshow/results")
+      .post("/api/noshow/results")
       .then((res) => {
         const data = res.data;
 
@@ -59,7 +59,17 @@ function FraudDetection() {
         // 의심 예약 리스트 세팅
         setReservations(data.suspiciousReservations);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("사기탐지 API 에러:", err);
+        // 에러 발생 시 빈 데이터로 초기화
+        setStats({
+          blockedThisMonth: 0,
+          savedAmount: 0,
+          detectionRate: 0,
+          falsePositive: 0,
+        });
+        setReservations([]);
+      });
   }, []);
 
   const handleLogout = () => {

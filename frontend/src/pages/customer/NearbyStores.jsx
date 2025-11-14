@@ -173,13 +173,25 @@ function NearbyStores() {
   // 카카오맵 초기화
   useEffect(() => {
     if (step === 'located' && location && mapRef.current) {
-      if (window.kakao && window.kakao.maps) {
-        window.kakao.maps.load(() => {
-          initializeMap();
-        });
-      } else {
-        console.error('Kakao Maps SDK not loaded');
-      }
+      // 카카오 SDK 로드 대기 (최대 5초)
+      let attempts = 0;
+      const maxAttempts = 50;
+
+      const checkKakaoLoaded = () => {
+        if (window.kakao && window.kakao.maps) {
+          console.log('✅ Kakao Maps SDK loaded successfully');
+          window.kakao.maps.load(() => {
+            initializeMap();
+          });
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(checkKakaoLoaded, 100);
+        } else {
+          console.error('❌ Kakao Maps SDK failed to load after 5 seconds');
+        }
+      };
+
+      checkKakaoLoaded();
     }
   }, [step, location]);
 

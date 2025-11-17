@@ -8,7 +8,7 @@
  */
 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Store, Users, Menu, LogOut } from 'lucide-react';
+import { Home, Users, Menu, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -99,15 +99,15 @@ const Navbar = ({ userType = null }) => {
             {userType === 'customer' && (
               <>
                 <Link
-                  to="/customer/search"
+                  to="/customer/nearby"
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/customer/search')
+                    isActive('/customer/nearby')
                       ? 'text-primary-green font-semibold'
                       : 'text-text-secondary hover:text-primary-green'
                   }`}
                 >
                   <Home size={20} />
-                  <span>맛집 찾기</span>
+                  <span>내 주변 맛집</span>
                 </Link>
                 <Link
                   to="/customer/voice-reservation"
@@ -205,11 +205,11 @@ const Navbar = ({ userType = null }) => {
             {userType === 'customer' && (
               <div className="flex flex-col space-y-2">
                 <Link
-                  to="/customer/search"
+                  to="/customer/nearby"
                   className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  맛집 찾기
+                  내 주변 맛집
                 </Link>
                 <Link
                   to="/customer/voice-reservation"

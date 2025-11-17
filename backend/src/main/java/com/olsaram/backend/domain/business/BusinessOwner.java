@@ -94,6 +94,11 @@ public class BusinessOwner {
     public void addBusiness(Business business) {
         this.businesses.add(business);
         business.setOwner(this);
-        this.totalBusinessCount++;
+        // null 체크 후 증가
+        if (this.totalBusinessCount == null) {
+            this.totalBusinessCount = 1;
+        } else {
+            this.totalBusinessCount++;
+        }
     }
 }

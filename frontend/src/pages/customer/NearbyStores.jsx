@@ -72,6 +72,18 @@ function NearbyStores() {
   // 모달
   const [showPermissionModal, setShowPermissionModal] = useState(false);
 
+  // 카카오 지도 스크립트 로드
+  useEffect(() => {
+    const kakaoMapKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
+    if (!document.getElementById('kakao-map-script')) {
+      const script = document.createElement('script');
+      script.id = 'kakao-map-script';
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapKey}&libraries=services&autoload=false`;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
   // 페이지 진입 시 위치 권한 모달 표시
   useEffect(() => {
     if (step === 'initial') {

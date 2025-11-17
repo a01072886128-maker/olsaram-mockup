@@ -132,7 +132,13 @@ const Dashboard = () => {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">홍대 중국집 ▼</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/owner/register-business')}
+            >
+              가게 등록하기
+            </Button>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut size={16} className="mr-1" />
               로그아웃

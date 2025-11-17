@@ -52,13 +52,19 @@ public class MenuOcrService {
         }
 
         // Business 조회 및 권한 확인
+        System.out.println("🔍 Business 조회 시도: businessId=" + businessId);
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 비즈니스입니다."));
+                .orElseThrow(() -> {
+                    System.out.println("❌ Business not found: businessId=" + businessId);
+                    return new IllegalArgumentException("존재하지 않는 비즈니스입니다. (businessId=" + businessId + ")");
+                });
+        System.out.println("✅ Business 찾음: " + business.getBusinessName() + " (owner_id=" + business.getOwner().getOwnerId() + ")");
 
-        // TODO: 임시로 권한 체크 비활성화 (테스트용) - 나중에 다시 활성화 필요!
-        // if (!Objects.equals(business.getOwner().getOwnerId(), ownerId)) {
-        //     throw new IllegalArgumentException("해당 비즈니스에 대한 권한이 없습니다.");
-        // }
+        // 권한 체크: 로그인한 사업자가 해당 business의 소유자인지 확인
+        if (!Objects.equals(business.getOwner().getOwnerId(), ownerId)) {
+            System.out.println("❌ 권한 없음: ownerId=" + ownerId + ", business.owner_id=" + business.getOwner().getOwnerId());
+            throw new IllegalArgumentException("해당 비즈니스에 대한 권한이 없습니다.");
+        }
 
         try {
             byte[] imageBytes = imageFile.getBytes();
@@ -98,13 +104,19 @@ public class MenuOcrService {
         }
 
         // Business 조회 및 권한 확인
+        System.out.println("🔍 Business 조회 시도: businessId=" + businessId);
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 비즈니스입니다."));
+                .orElseThrow(() -> {
+                    System.out.println("❌ Business not found: businessId=" + businessId);
+                    return new IllegalArgumentException("존재하지 않는 비즈니스입니다. (businessId=" + businessId + ")");
+                });
+        System.out.println("✅ Business 찾음: " + business.getBusinessName() + " (owner_id=" + business.getOwner().getOwnerId() + ")");
 
-        // TODO: 임시로 권한 체크 비활성화 (테스트용) - 나중에 다시 활성화 필요!
-        // if (!Objects.equals(business.getOwner().getOwnerId(), ownerId)) {
-        //     throw new IllegalArgumentException("해당 비즈니스에 대한 권한이 없습니다.");
-        // }
+        // 권한 체크: 로그인한 사업자가 해당 business의 소유자인지 확인
+        if (!Objects.equals(business.getOwner().getOwnerId(), ownerId)) {
+            System.out.println("❌ 권한 없음: ownerId=" + ownerId + ", business.owner_id=" + business.getOwner().getOwnerId());
+            throw new IllegalArgumentException("해당 비즈니스에 대한 권한이 없습니다.");
+        }
 
         // MenuSaveRequest를 Menu 엔티티로 변환
         List<Menu> menus = menuRequests.stream()

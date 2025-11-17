@@ -20,6 +20,7 @@ import FraudDetection from './pages/owner/FraudDetection';
 import Reservations from './pages/owner/Reservations';
 import MenuOCR from './pages/owner/MenuOCR';
 import Community from './pages/owner/Community';
+import RegisterBusiness from './pages/owner/RegisterBusiness';
 
 // 관리자 페이지
 import AdminFraudDetection from './pages/admin/FraudDetection';
@@ -117,6 +118,14 @@ function App() {
           element={
             <RequireOwnerAuth>
               <Community />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/register-business"
+          element={
+            <RequireOwnerAuth>
+              <RegisterBusiness />
             </RequireOwnerAuth>
           }
         />

@@ -17,6 +17,7 @@ import {
   Check,
   AlertCircle,
   Plus,
+  Store,
 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Card from "../../components/Card";
@@ -29,10 +30,10 @@ const MenuOCR = () => {
   const { user } = useAuth();
   const ownerId = user?.ownerId;
 
-  // TODO: 실제 비즈니스 선택 기능 추가 필요
-  // 현재는 임시로 businessId를 1로 설정
-  // eslint-disable-next-line no-unused-vars
-  const [businessId, setBusinessId] = useState(1);
+  // 가게 목록 및 선택된 가게
+  const [businesses, setBusinesses] = useState([]);
+  const [businessId, setBusinessId] = useState(null);
+  const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,6 +48,50 @@ const MenuOCR = () => {
   const [isMenuLoading, setIsMenuLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
   const fileInputRef = useRef(null);
+
+  // 사업자의 가게 목록 조회
+  const fetchBusinesses = useCallback(async () => {
+    if (!ownerId) {
+      return;
+    }
+
+    setIsLoadingBusinesses(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/owner/businesses?ownerId=${ownerId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("가게 목록을 불러오지 못했습니다.");
+      }
+
+      const data = await response.json();
+      setBusinesses(Array.isArray(data) ? data : []);
+
+      // 가게가 1개만 있으면 자동 선택
+      if (data.length === 1) {
+        setBusinessId(data[0].businessId);
+      }
+      // 가게가 여러 개면 첫 번째 선택 (또는 null로 두고 사용자가 선택하게 할 수도 있음)
+      else if (data.length > 1) {
+        setBusinessId(data[0].businessId);
+      }
+    } catch (error) {
+      console.error(error);
+      setToast({
+        show: true,
+        message: error.message || "가게 목록을 불러오지 못했습니다.",
+        type: "error",
+      });
+    } finally {
+      setIsLoadingBusinesses(false);
+    }
+  }, [ownerId]);
+
+  // 컴포넌트 마운트 시 가게 목록 조회
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
 
   const fetchExistingMenus = useCallback(async () => {
     if (!ownerId || !businessId) {
@@ -93,6 +138,15 @@ const MenuOCR = () => {
       return;
     }
 
+    if (!businessId) {
+      setToast({
+        show: true,
+        message: "가게를 먼저 선택해주세요.",
+        type: "error",
+      });
+      return;
+    }
+
     if (file.size > 10 * 1024 * 1024) {
       setToast({
         show: true,
@@ -112,6 +166,7 @@ const MenuOCR = () => {
     setIsProcessing(true);
 
     try {
+      console.log('🔍 OCR 업로드 요청:', { ownerId, businessId });
       const response = await menuAPI.uploadMenuImage({ ownerId, businessId, file });
       // OCR 결과를 임시 상태로 저장 (DB에 저장되지 않음)
       setOcrResult(response?.items ?? []);
@@ -297,6 +352,47 @@ const MenuOCR = () => {
           <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700">
             로그인이 필요한 기능입니다. 먼저 로그인한 뒤 다시 시도해주세요.
           </div>
+        )}
+
+        {/* 가게 선택 */}
+        {ownerId && (
+          <Card className="mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Store className="text-primary-green" size={24} />
+                <h3 className="text-lg font-semibold text-text-primary">
+                  가게 선택
+                </h3>
+              </div>
+              {isLoadingBusinesses ? (
+                <div className="text-text-secondary">로딩 중...</div>
+              ) : businesses.length === 0 ? (
+                <div className="text-red-600">
+                  등록된 가게가 없습니다. 먼저 가게를 등록해주세요.
+                </div>
+              ) : (
+                <select
+                  value={businessId || ""}
+                  onChange={(e) => setBusinessId(Number(e.target.value))}
+                  className="px-4 py-2 border border-border-color rounded-lg focus:ring-2 focus:ring-primary-green focus:border-transparent"
+                >
+                  {businesses.map((business) => (
+                    <option key={business.businessId} value={business.businessId}>
+                      {business.businessName} ({business.category})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {businessId && businesses.length > 0 && (
+              <div className="mt-3 text-sm text-text-secondary">
+                선택된 가게:{" "}
+                <span className="font-semibold text-text-primary">
+                  {businesses.find((b) => b.businessId === businessId)?.businessName}
+                </span>
+              </div>
+            )}
+          </Card>
         )}
 
         {/* 파일 업로드 영역 */}

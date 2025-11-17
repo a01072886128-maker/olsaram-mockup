@@ -1,7 +1,13 @@
 package com.olsaram.backend.controller.reservation;
 
-import com.olsaram.backend.domain.reservation.*;
-import com.olsaram.backend.service.reservation.*;
+import com.olsaram.backend.domain.reservation.Payment;
+import com.olsaram.backend.domain.reservation.Reservation;
+import com.olsaram.backend.domain.reservation.Reward;
+import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
+import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
+import com.olsaram.backend.service.reservation.PaymentService;
+import com.olsaram.backend.service.reservation.ReservationService;
+import com.olsaram.backend.service.reservation.RewardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +38,11 @@ public class ReservationController {
         return reservationService.getAllReservations();
     }
 
+    @GetMapping("/owners/{ownerId}/reservations")
+    public List<OwnerReservationResponse> getReservationsByOwnerId(@PathVariable Long ownerId) {
+        return reservationService.getReservationsByOwnerId(ownerId);
+    }
+
     @GetMapping("/reservations/{id}")
     public Reservation getReservationById(@PathVariable Long id) {
         return reservationService.getReservationById(id)
@@ -41,6 +52,14 @@ public class ReservationController {
     @DeleteMapping("/reservations/{id}")
     public void deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
+    }
+
+    @PatchMapping("/reservations/{id}/status")
+    public Reservation updateReservationStatus(
+            @PathVariable Long id,
+            @RequestBody ReservationStatusUpdateRequest request
+    ) {
+        return reservationService.updateReservationStatus(id, request);
     }
 
     // ─────────────────────────────────────────────

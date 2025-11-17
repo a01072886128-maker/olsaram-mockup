@@ -25,6 +25,7 @@ import Button from "../../components/Button";
 import Toast from "../../components/Toast";
 import { useAuth } from "../../contexts/AuthContext";
 import { menuAPI } from "../../services/menu";
+import { businessAPI } from "../../services/business";
 
 const MenuOCR = () => {
   const { user } = useAuth();
@@ -57,22 +58,14 @@ const MenuOCR = () => {
 
     setIsLoadingBusinesses(true);
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/owner/businesses?ownerId=${ownerId}`
-      );
-
-      if (!response.ok) {
-        throw new Error("가게 목록을 불러오지 못했습니다.");
-      }
-
-      const data = await response.json();
+      const data = await businessAPI.getBusinessesByOwner(ownerId);
       setBusinesses(Array.isArray(data) ? data : []);
 
       // 가게가 1개만 있으면 자동 선택
       if (data.length === 1) {
         setBusinessId(data[0].businessId);
       }
-      // 가게가 여러 개면 첫 번째 선택 (또는 null로 두고 사용자가 선택하게 할 수도 있음)
+      // 가게가 여러 개면 첫 번째 선택
       else if (data.length > 1) {
         setBusinessId(data[0].businessId);
       }

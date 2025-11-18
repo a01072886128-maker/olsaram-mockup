@@ -1,16 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
-import { Avatar, AvatarFallback } from '../../components/ui/avatar';
-import { Progress } from '../../components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Gift, Clock, MapPin } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
+import { Progress } from "../../components/ui/progress";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import { Gift, Clock, MapPin } from "lucide-react";
 
+import Modal from "../../components/Modal"; // ⭐ 모달 import
+import { useState } from "react"; // ⭐ 모달 상태용
+
+// ----------- 기존 mock 데이터 유지 -----------
 const mockUserProfile = {
-  name: '김민수',
-  phone: '010-1234-5678',
+  name: "김민수",
+  phone: "010-1234-5678",
   trustScore: 95,
-  trustLevel: '플래티넘',
+  trustLevel: "플래티넘",
   totalVisits: 47,
   noShowCount: 0,
   points: 28500,
@@ -20,32 +34,32 @@ const mockUserProfile = {
 const mockReservationHistory = [
   {
     id: 1,
-    restaurant: '신라면옥 홍대점',
-    date: '2025-11-01',
-    time: '18:00',
+    restaurant: "신라면옥 홍대점",
+    date: "2025-11-01",
+    time: "18:00",
     partySize: 4,
-    status: 'completed',
-    statusText: '방문 완료',
+    status: "completed",
+    statusText: "방문 완료",
     pointsEarned: 1500,
   },
   {
     id: 2,
-    restaurant: '강남 스테이크',
-    date: '2025-10-28',
-    time: '19:30',
+    restaurant: "강남 스테이크",
+    date: "2025-10-28",
+    time: "19:30",
     partySize: 2,
-    status: 'completed',
-    statusText: '방문 완료',
+    status: "completed",
+    statusText: "방문 완료",
     pointsEarned: 3000,
   },
   {
     id: 3,
-    restaurant: '이태원 돈까스',
-    date: '2025-10-25',
-    time: '12:00',
+    restaurant: "이태원 돈까스",
+    date: "2025-10-25",
+    time: "12:00",
     partySize: 1,
-    status: 'completed',
-    statusText: '방문 완료',
+    status: "completed",
+    statusText: "방문 완료",
     pointsEarned: 800,
   },
 ];
@@ -53,23 +67,23 @@ const mockReservationHistory = [
 const mockRewards = [
   {
     id: 1,
-    title: '5,000원 할인 쿠폰',
-    description: '전 가맹점 사용 가능',
-    expiryDate: '2025-12-31',
+    title: "5,000원 할인 쿠폰",
+    description: "전 가맹점 사용 가능",
+    expiryDate: "2025-12-31",
     available: true,
   },
   {
     id: 2,
-    title: '10% 할인 쿠폰',
-    description: '프리미엄 레스토랑 전용',
-    expiryDate: '2025-11-30',
+    title: "10% 할인 쿠폰",
+    description: "프리미엄 레스토랑 전용",
+    expiryDate: "2025-11-30",
     available: true,
   },
   {
     id: 3,
-    title: '무료 음료 쿠폰',
-    description: '신라면옥 전점 사용 가능',
-    expiryDate: '2025-11-15',
+    title: "무료 음료 쿠폰",
+    description: "신라면옥 전점 사용 가능",
+    expiryDate: "2025-11-15",
     available: false,
   },
 ];
@@ -78,12 +92,19 @@ function CustomerMyPage() {
   const progressValue =
     (mockUserProfile.points / mockUserProfile.nextLevelPoints) * 100;
 
+  // ⭐ 모달 상태 공통으로 관리
+  const [modalType, setModalType] = useState(null);
+  const closeModal = () => setModalType(null);
+
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header - 프로페셔널 스타일 */}
+      {/* ------- Header 그대로 ------- */}
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto px-8 h-20 flex items-center justify-between">
-          <a href="/" className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">
+          <a
+            href="/"
+            className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+          >
             올사람
           </a>
           <div className="flex gap-4">
@@ -98,7 +119,7 @@ function CustomerMyPage() {
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        {/* 프로필 카드 - 프로페셔널 스타일 */}
+        {/* ------- 프로필 카드 그대로 ------- */}
         <Card className="mb-8 border-slate-200">
           <CardContent className="p-8">
             <div className="flex flex-col gap-6 md:flex-row md:items-start">
@@ -110,11 +131,14 @@ function CustomerMyPage() {
 
               <div className="flex-1">
                 <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <h2 className="text-3xl font-bold text-slate-900">{mockUserProfile.name}</h2>
+                  <h2 className="text-3xl font-bold text-slate-900">
+                    {mockUserProfile.name}
+                  </h2>
                   <Badge className="bg-blue-600 text-white">
                     {mockUserProfile.trustLevel}
                   </Badge>
                 </div>
+
                 <p className="mb-4 text-slate-600">{mockUserProfile.phone}</p>
 
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -124,18 +148,21 @@ function CustomerMyPage() {
                       {mockUserProfile.trustScore}점
                     </div>
                   </div>
+
                   <div>
                     <div className="text-sm text-slate-500">총 방문</div>
                     <div className="text-2xl font-bold text-slate-900">
                       {mockUserProfile.totalVisits}회
                     </div>
                   </div>
+
                   <div>
                     <div className="text-sm text-slate-500">노쇼</div>
                     <div className="text-2xl font-bold text-green-600">
                       {mockUserProfile.noShowCount}회
                     </div>
                   </div>
+
                   <div>
                     <div className="text-sm text-slate-500">포인트</div>
                     <div className="text-2xl font-bold text-green-600">
@@ -150,7 +177,8 @@ function CustomerMyPage() {
               <div className="mb-2 flex items-center justify-between text-sm font-medium text-slate-700">
                 <span>다음 등급까지</span>
                 <span className="text-slate-500">
-                  {mockUserProfile.nextLevelPoints - mockUserProfile.points}P 남음
+                  {mockUserProfile.nextLevelPoints - mockUserProfile.points}P
+                  남음
                 </span>
               </div>
               <Progress value={progressValue} />
@@ -158,20 +186,16 @@ function CustomerMyPage() {
           </CardContent>
         </Card>
 
-        {/* 탭 - 프로페셔널 스타일 */}
+        {/* ------- TABS 전체 유지 ------- */}
         <Tabs defaultValue="history">
+          {/* --- 탭 버튼 유지 --- */}
           <TabsList className="mb-6 bg-white border">
-            <TabsTrigger value="history" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              예약 내역
-            </TabsTrigger>
-            <TabsTrigger value="rewards" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              리워드
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              설정
-            </TabsTrigger>
+            <TabsTrigger value="history">예약 내역</TabsTrigger>
+            <TabsTrigger value="rewards">리워드</TabsTrigger>
+            <TabsTrigger value="settings">설정</TabsTrigger>
           </TabsList>
 
+          {/* ------- 예약 내역 탭 그대로 ------- */}
           <TabsContent value="history" className="space-y-4">
             {mockReservationHistory.map((reservation) => (
               <Card key={reservation.id} className="border-slate-200">
@@ -182,10 +206,14 @@ function CustomerMyPage() {
                         <h3 className="text-lg font-bold text-slate-900">
                           {reservation.restaurant}
                         </h3>
-                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
+                        <Badge
+                          variant="outline"
+                          className="border-green-200 bg-green-50 text-green-700"
+                        >
                           {reservation.statusText}
                         </Badge>
                       </div>
+
                       <div className="space-y-1 text-sm text-slate-600">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-slate-400" />
@@ -193,10 +221,12 @@ function CustomerMyPage() {
                             {reservation.date} {reservation.time}
                           </span>
                         </div>
+
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-slate-400" />
                           <span>{reservation.partySize}명 방문</span>
                         </div>
+
                         <div className="flex items-center gap-2">
                           <Gift className="h-4 w-4 text-blue-600" />
                           <span className="font-medium text-blue-600">
@@ -205,11 +235,12 @@ function CustomerMyPage() {
                         </div>
                       </div>
                     </div>
+
                     <div className="flex gap-2 md:flex-col">
-                      <Button variant="outline" size="sm" className="border-slate-300">
+                      <Button variant="outline" size="sm">
                         다시 예약하기
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-slate-600">
+                      <Button variant="ghost" size="sm">
                         리뷰 작성
                       </Button>
                     </div>
@@ -219,6 +250,7 @@ function CustomerMyPage() {
             ))}
           </TabsContent>
 
+          {/* ------- 리워드 탭 그대로 ------- */}
           <TabsContent value="rewards" className="space-y-4">
             <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
               <CardHeader>
@@ -231,30 +263,45 @@ function CustomerMyPage() {
                 <p className="mb-4 text-sm text-slate-600">
                   1P = 1원으로 전 가맹점에서 사용 가능합니다.
                 </p>
-                <Button className="bg-blue-600 hover:bg-blue-700">포인트 사용하기</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  포인트 사용하기
+                </Button>
               </CardContent>
             </Card>
 
             <div className="grid gap-4 md:grid-cols-2">
               {mockRewards.map((reward) => (
-                <Card key={reward.id} className={`border-slate-200 ${!reward.available ? 'opacity-50' : ''}`}>
+                <Card
+                  key={reward.id}
+                  className={`border-slate-200 ${
+                    !reward.available ? "opacity-50" : ""
+                  }`}
+                >
                   <CardContent className="p-6">
                     <div className="mb-3 flex items-start gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-100 text-blue-600">
                         <Gift className="h-5 w-5" />
                       </div>
+
                       <div>
-                        <h3 className="mb-1 text-base font-semibold text-slate-900">{reward.title}</h3>
-                        <p className="text-sm text-slate-600">{reward.description}</p>
-                        <p className="mt-1 text-xs text-slate-500">만료일: {reward.expiryDate}</p>
+                        <h3 className="mb-1 text-base font-semibold text-slate-900">
+                          {reward.title}
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                          {reward.description}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          만료일: {reward.expiryDate}
+                        </p>
                       </div>
                     </div>
+
                     <Button
                       className="w-full bg-blue-600 hover:bg-blue-700"
                       size="sm"
                       disabled={!reward.available}
                     >
-                      {reward.available ? '사용하기' : '사용 완료'}
+                      {reward.available ? "사용하기" : "사용 완료"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -262,19 +309,39 @@ function CustomerMyPage() {
             </div>
           </TabsContent>
 
+          {/* ------- 설정 탭 (모달만 추가) ------- */}
           <TabsContent value="settings">
             <Card className="border-slate-200">
               <CardContent className="space-y-3 p-6">
-                <Button variant="outline" className="w-full justify-start border-slate-300">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start border-slate-300"
+                  onClick={() => setModalType("profile")}
+                >
                   개인정보 수정
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-300">
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start border-slate-300"
+                  onClick={() => setModalType("alert")}
+                >
                   알림 설정
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-300">
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start border-slate-300"
+                  onClick={() => setModalType("payment")}
+                >
                   결제 수단 관리
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-red-300 text-red-600 hover:bg-red-50">
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start border-red-300 text-red-600 hover:bg-red-50"
+                  onClick={() => setModalType("withdraw")}
+                >
                   회원 탈퇴
                 </Button>
               </CardContent>
@@ -282,9 +349,41 @@ function CustomerMyPage() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* ------- 모달 4개 ------- */}
+      <Modal
+        isOpen={modalType === "profile"}
+        onClose={closeModal}
+        title="개인정보 수정"
+      >
+        <p className="text-slate-700">개인정보 수정 모달 내용입니다.</p>
+      </Modal>
+
+      <Modal
+        isOpen={modalType === "alert"}
+        onClose={closeModal}
+        title="알림 설정"
+      >
+        <p className="text-slate-700">알림 설정 모달 내용입니다.</p>
+      </Modal>
+
+      <Modal
+        isOpen={modalType === "payment"}
+        onClose={closeModal}
+        title="결제 수단 관리"
+      >
+        <p className="text-slate-700">결제 수단 관리 모달 내용입니다.</p>
+      </Modal>
+
+      <Modal
+        isOpen={modalType === "withdraw"}
+        onClose={closeModal}
+        title="회원 탈퇴"
+      >
+        <p className="text-slate-700">정말로 탈퇴하시겠습니까?</p>
+      </Modal>
     </div>
   );
 }
 
 export default CustomerMyPage;
-

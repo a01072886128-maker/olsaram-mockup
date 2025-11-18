@@ -5,39 +5,46 @@
  * 모든 페이지 경로를 정의하고 렌더링
  */
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext.jsx';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext.jsx";
 
 // 페이지 컴포넌트 import
-import Landing from './pages/Landing';
-import OwnerLogin from './pages/auth/OwnerLogin';
-import CustomerLogin from './pages/auth/CustomerLogin';
-import Register from './pages/auth/Register';
+import Landing from "./pages/Landing";
+import OwnerLogin from "./pages/auth/OwnerLogin";
+import CustomerLogin from "./pages/auth/CustomerLogin";
+import Register from "./pages/auth/Register";
 
 // 사장님 페이지
-import OwnerDashboard from './pages/owner/Dashboard';
-import FraudDetection from './pages/owner/FraudDetection';
-import Reservations from './pages/owner/Reservations';
-import MenuOCR from './pages/owner/MenuOCR';
-import Community from './pages/owner/Community';
-import RegisterBusiness from './pages/owner/RegisterBusiness';
+import OwnerDashboard from "./pages/owner/Dashboard";
+import FraudDetection from "./pages/owner/FraudDetection";
+import Reservations from "./pages/owner/Reservations";
+import MenuOCR from "./pages/owner/MenuOCR";
+import Community from "./pages/owner/Community";
+import RegisterBusiness from "./pages/owner/RegisterBusiness";
+import OwnerMyPage from "./pages/owner/MyPage.jsx";
 
 // 관리자 페이지
-import AdminFraudDetection from './pages/admin/FraudDetection';
-import AdminZeroDeposit from './pages/admin/ZeroDeposit';
-import AdminMenuOCR from './pages/admin/MenuOCR';
+import AdminFraudDetection from "./pages/admin/FraudDetection";
+import AdminZeroDeposit from "./pages/admin/ZeroDeposit";
+import AdminMenuOCR from "./pages/admin/MenuOCR";
 
 // 고객 페이지
-import CustomerSearch from './pages/customer/Search';
-import VoiceReservation from './pages/customer/VoiceReservation';
-import GroupReservation from './pages/customer/GroupReservation';
-import CustomerMyPage from './pages/customer/MyPage';
-import NearbyStores from './pages/customer/NearbyStores';
+import CustomerSearch from "./pages/customer/Search";
+import VoiceReservation from "./pages/customer/VoiceReservation";
+import GroupReservation from "./pages/customer/GroupReservation";
+import CustomerMyPage from "./pages/customer/MyPage.jsx";
+import NearbyStores from "./pages/customer/NearbyStores";
+import CustomerCommunity from "./pages/customer/Community.jsx";
 
 function RequireOwnerAuth({ children }) {
   const { status } = useAuth();
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-text-secondary">
         인증 정보를 확인하고 있습니다...
@@ -45,7 +52,7 @@ function RequireOwnerAuth({ children }) {
     );
   }
 
-  if (status !== 'authenticated') {
+  if (status !== "authenticated") {
     return <Navigate to="/" replace />;
   }
 
@@ -55,7 +62,7 @@ function RequireOwnerAuth({ children }) {
 function RequireCustomerAuth({ children }) {
   const { status } = useAuth();
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-text-secondary">
         인증 정보를 확인하고 있습니다...
@@ -63,7 +70,7 @@ function RequireCustomerAuth({ children }) {
     );
   }
 
-  if (status !== 'authenticated') {
+  if (status !== "authenticated") {
     return <Navigate to="/auth/customer-login" replace />;
   }
 
@@ -129,9 +136,20 @@ function App() {
             </RequireOwnerAuth>
           }
         />
+        <Route
+          path="/owner/my-page"
+          element={
+            <RequireOwnerAuth>
+              <OwnerMyPage />
+            </RequireOwnerAuth>
+          }
+        />
 
         {/* 관리자 페이지 */}
-        <Route path="/admin/fraud-detection" element={<AdminFraudDetection />} />
+        <Route
+          path="/admin/fraud-detection"
+          element={<AdminFraudDetection />}
+        />
         <Route path="/admin/zero-deposit" element={<AdminZeroDeposit />} />
         <Route path="/admin/menu-ocr" element={<AdminMenuOCR />} />
 
@@ -169,10 +187,18 @@ function App() {
           }
         />
         <Route
-          path="/customer/mypage"
+          path="/customer/my-page"
           element={
             <RequireCustomerAuth>
               <CustomerMyPage />
+            </RequireCustomerAuth>
+          }
+        />
+        <Route
+          path="/customer/community"
+          element={
+            <RequireCustomerAuth>
+              <CustomerCommunity />
             </RequireCustomerAuth>
           }
         />

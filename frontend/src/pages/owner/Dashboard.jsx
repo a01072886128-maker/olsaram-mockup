@@ -5,7 +5,7 @@
  * KT 사장님Easy의 깔끔한 디자인 스타일 적용
  */
 
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from "react-router-dom";
 import {
   Calendar,
   AlertTriangle,
@@ -16,13 +16,13 @@ import {
   CheckCircle,
   AlertCircle,
   Shield,
-  LogOut
-} from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import StatCard from '../../components/StatCard';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
-import { useAuth } from '../../contexts/AuthContext';
+  LogOut,
+} from "lucide-react";
+import Navbar from "../../components/Navbar";
+import StatCard from "../../components/StatCard";
+import Card from "../../components/Card";
+import Button from "../../components/Button";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,89 +30,89 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/', { replace: true });
+    navigate("/", { replace: true });
   };
   // 더미 통계 데이터
   const stats = [
     {
       icon: <Calendar />,
-      title: '오늘 예약',
-      value: '24건',
-      change: '+12% 전일 대비',
-      changeType: 'positive'
+      title: "오늘 예약",
+      value: "24건",
+      change: "+12% 전일 대비",
+      changeType: "positive",
     },
     {
       icon: <AlertTriangle />,
-      title: '이번 달 노쇼율',
-      value: '3.2%',
-      change: '-2.1% 전월 대비',
-      changeType: 'positive'
+      title: "이번 달 노쇼율",
+      value: "3.2%",
+      change: "-2.1% 전월 대비",
+      changeType: "positive",
     },
     {
       icon: <DollarSign />,
-      title: '이번 달 예상 매출',
-      value: '₩8.2M',
-      change: '+15.3% 전월 대비',
-      changeType: 'positive'
+      title: "이번 달 예상 매출",
+      value: "₩8.2M",
+      change: "+15.3% 전월 대비",
+      changeType: "positive",
     },
     {
       icon: <Users />,
-      title: '신뢰 고객 비율',
-      value: '78%',
-      change: '+5% 전월 대비',
-      changeType: 'positive'
-    }
+      title: "신뢰 고객 비율",
+      value: "78%",
+      change: "+5% 전월 대비",
+      changeType: "positive",
+    },
   ];
 
   // 더미 예약 데이터
   const todayReservations = [
     {
       id: 1,
-      customerName: '김민수',
-      trustLevel: '단골',
+      customerName: "김민수",
+      trustLevel: "단골",
       stars: 5,
-      time: '11:30',
+      time: "11:30",
       partySize: 2,
-      status: 'confirmed',
-      menu: '런치 세트 A'
+      status: "confirmed",
+      menu: "런치 세트 A",
     },
     {
       id: 2,
-      customerName: '이지현',
-      trustLevel: '새싹',
+      customerName: "이지현",
+      trustLevel: "새싹",
       stars: 1,
-      time: '12:00',
+      time: "12:00",
       partySize: 4,
-      status: 'confirmed',
-      menu: '특선 코스'
+      status: "confirmed",
+      menu: "특선 코스",
     },
     {
       id: 3,
-      customerName: '박준호',
-      trustLevel: '우수',
+      customerName: "박준호",
+      trustLevel: "우수",
       stars: 3,
-      time: '12:30',
+      time: "12:30",
       partySize: 3,
-      status: 'pending',
-      menu: '일반 메뉴'
+      status: "pending",
+      menu: "일반 메뉴",
     },
     {
       id: 4,
-      customerName: '최수진',
-      trustLevel: '단골',
+      customerName: "최수진",
+      trustLevel: "단골",
       stars: 5,
-      time: '18:00',
+      time: "18:00",
       partySize: 6,
-      status: 'confirmed',
-      menu: '디너 코스 B'
-    }
+      status: "confirmed",
+      menu: "디너 코스 B",
+    },
   ];
 
   // 신뢰 등급별 색상
   const trustLevelColors = {
-    '단골': 'text-yellow-500',
-    '우수': 'text-primary-green',
-    '새싹': 'text-light-green'
+    단골: "text-yellow-500",
+    우수: "text-primary-green",
+    새싹: "text-light-green",
   };
 
   return (
@@ -125,17 +125,43 @@ const Dashboard = () => {
               <h1 className="text-2xl font-bold text-text-primary">올사람</h1>
             </Link>
             <nav className="hidden md:flex gap-6">
-              <Link to="/owner/dashboard" className="text-text-primary font-medium">대시보드</Link>
-              <Link to="/owner/reservations" className="text-text-secondary hover:text-text-primary">예약 관리</Link>
-              <Link to="/owner/fraud-detection" className="text-text-secondary hover:text-text-primary">사기 탐지</Link>
-              <Link to="/owner/menu-ocr" className="text-text-secondary hover:text-text-primary">메뉴 관리</Link>
+              <Link
+                to="/owner/dashboard"
+                className="text-text-primary font-medium"
+              >
+                대시보드
+              </Link>
+              <Link
+                to="/owner/reservations"
+                className="text-text-secondary hover:text-text-primary"
+              >
+                예약 관리
+              </Link>
+              <Link
+                to="/owner/fraud-detection"
+                className="text-text-secondary hover:text-text-primary"
+              >
+                사기 탐지
+              </Link>
+              <Link
+                to="/owner/menu-ocr"
+                className="text-text-secondary hover:text-text-primary"
+              >
+                메뉴 관리
+              </Link>
+              <Link
+                to="/owner/community"
+                className="text-text-secondary hover:text-text-primary"
+              >
+                커뮤니티
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/owner/register-business')}
+              onClick={() => navigate("/owner/register-business")}
             >
               가게 등록하기
             </Button>
@@ -151,8 +177,12 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {/* 환영 메시지 */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2 text-text-primary">안녕하세요, 홍대 중국집님</h2>
-          <p className="text-text-secondary">오늘도 노쇼 걱정 없는 하루 되세요!</p>
+          <h2 className="text-3xl font-bold mb-2 text-text-primary">
+            안녕하세요, 홍대 중국집님
+          </h2>
+          <p className="text-text-secondary">
+            오늘도 노쇼 걱정 없는 하루 되세요!
+          </p>
         </div>
 
         {/* 통계 카드 - KT 스타일 4열 */}
@@ -181,7 +211,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {todayReservations.map(reservation => (
+                  {todayReservations.map((reservation) => (
                     <div
                       key={reservation.id}
                       className="border border-border-color rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
@@ -192,8 +222,13 @@ const Dashboard = () => {
                             <span className="font-bold text-text-primary text-lg">
                               {reservation.customerName}
                             </span>
-                            <span className={`text-sm ${trustLevelColors[reservation.trustLevel]}`}>
-                              {reservation.trustLevel} {'⭐'.repeat(reservation.stars)}
+                            <span
+                              className={`text-sm ${
+                                trustLevelColors[reservation.trustLevel]
+                              }`}
+                            >
+                              {reservation.trustLevel}{" "}
+                              {"⭐".repeat(reservation.stars)}
                             </span>
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-text-secondary">
@@ -211,7 +246,7 @@ const Dashboard = () => {
                           </p>
                         </div>
                         <div>
-                          {reservation.status === 'confirmed' ? (
+                          {reservation.status === "confirmed" ? (
                             <div className="flex items-center text-primary-green text-sm font-semibold">
                               <CheckCircle size={16} className="mr-1" />
                               확정
@@ -258,12 +293,6 @@ const Dashboard = () => {
                       사기 패턴 확인
                     </button>
                   </Link>
-                  <Link to="/owner/community">
-                    <button className="w-full border-2 border-text-secondary text-text-secondary hover:bg-gray-50 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
-                      <Users className="mr-2" size={20} />
-                      커뮤니티
-                    </button>
-                  </Link>
                 </div>
               </div>
             </Card>
@@ -277,29 +306,46 @@ const Dashboard = () => {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-text-secondary">신뢰 고객 비율</span>
-                      <span className="font-semibold text-primary-green">78%</span>
+                      <span className="text-text-secondary">
+                        신뢰 고객 비율
+                      </span>
+                      <span className="font-semibold text-primary-green">
+                        78%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-primary-green h-2 rounded-full" style={{ width: '78%' }}></div>
+                      <div
+                        className="bg-primary-green h-2 rounded-full"
+                        style={{ width: "78%" }}
+                      ></div>
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-text-secondary">예약 달성률</span>
-                      <span className="font-semibold text-primary-purple">92%</span>
+                      <span className="font-semibold text-primary-purple">
+                        92%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-primary-purple h-2 rounded-full" style={{ width: '92%' }}></div>
+                      <div
+                        className="bg-primary-purple h-2 rounded-full"
+                        style={{ width: "92%" }}
+                      ></div>
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-text-secondary">노쇼 방지율</span>
-                      <span className="font-semibold text-dark-green">96.8%</span>
+                      <span className="font-semibold text-dark-green">
+                        96.8%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-dark-green h-2 rounded-full" style={{ width: '96.8%' }}></div>
+                      <div
+                        className="bg-dark-green h-2 rounded-full"
+                        style={{ width: "96.8%" }}
+                      ></div>
                     </div>
                   </div>
                 </div>

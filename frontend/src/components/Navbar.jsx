@@ -7,10 +7,10 @@
  * @param {string} userType - 사용자 타입 (owner, customer, null)
  */
 
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Menu, LogOut } from 'lucide-react';
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Users, Menu, LogOut } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 const Navbar = ({ userType = null }) => {
   const location = useLocation();
@@ -20,12 +20,14 @@ const Navbar = ({ userType = null }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/', { replace: true });
+    navigate("/", { replace: true });
     setMobileMenuOpen(false);
   };
 
   // 현재 경로가 활성화된 메뉴인지 확인
   const isActive = (path) => location.pathname === path;
+
+  console.log("### DEBUG userType =", userType);
 
   return (
     <nav className="bg-white border-b border-border-color sticky top-0 z-50 shadow-sm">
@@ -43,14 +45,14 @@ const Navbar = ({ userType = null }) => {
 
           {/* 데스크톱 메뉴 */}
           <div className="hidden md:flex items-center space-x-8">
-            {userType === 'owner' && (
+            {userType === "owner" && (
               <>
                 <Link
                   to="/owner/dashboard"
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/owner/dashboard')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/owner/dashboard")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   <Home size={20} />
@@ -59,9 +61,9 @@ const Navbar = ({ userType = null }) => {
                 <Link
                   to="/owner/fraud-detection"
                   className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/owner/fraud-detection')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/owner/fraud-detection")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   AI 사기탐지
@@ -69,9 +71,9 @@ const Navbar = ({ userType = null }) => {
                 <Link
                   to="/owner/reservations"
                   className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/owner/reservations')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/owner/reservations")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   예약관리
@@ -79,12 +81,21 @@ const Navbar = ({ userType = null }) => {
                 <Link
                   to="/owner/community"
                   className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/owner/community')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/owner/community")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   커뮤니티
+                </Link>
+
+                {/* 🔥 여기 마이페이지 추가 */}
+                <Link
+                  to="/owner/my-page"
+                  className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  마이페이지
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -96,39 +107,53 @@ const Navbar = ({ userType = null }) => {
               </>
             )}
 
-            {userType === 'customer' && (
+            {userType === "customer" && (
               <>
                 <Link
                   to="/customer/nearby"
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/customer/nearby')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/customer/nearby")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   <Home size={20} />
                   <span>내 주변 맛집</span>
                 </Link>
+
                 <Link
                   to="/customer/voice-reservation"
                   className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/customer/voice-reservation')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/customer/voice-reservation")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   음성 예약
                 </Link>
+
+                <Link
+                  to="/customer/community"
+                  className={`px-3 py-2 rounded-lg transition-colors ${
+                    isActive("/customer/community")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
+                  }`}
+                >
+                  게시판
+                </Link>
+
                 <Link
                   to="/customer/my-page"
                   className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/customer/my-page')
-                      ? 'text-primary-green font-semibold'
-                      : 'text-text-secondary hover:text-primary-green'
+                    isActive("/customer/my-page")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
                   마이페이지
                 </Link>
+
                 <button
                   onClick={handleLogout}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-text-secondary hover:text-red-600 hover:bg-red-50"
@@ -169,7 +194,7 @@ const Navbar = ({ userType = null }) => {
         {/* 모바일 메뉴 */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border-color">
-            {userType === 'owner' && (
+            {userType === "owner" && (
               <div className="flex flex-col space-y-2">
                 <Link
                   to="/owner/dashboard"
@@ -202,7 +227,7 @@ const Navbar = ({ userType = null }) => {
               </div>
             )}
 
-            {userType === 'customer' && (
+            {userType === "customer" && (
               <div className="flex flex-col space-y-2">
                 <Link
                   to="/customer/nearby"
@@ -218,6 +243,14 @@ const Navbar = ({ userType = null }) => {
                 >
                   음성 예약
                 </Link>
+                <Link
+                  to="/customer/community"
+                  className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  게시판
+                </Link>
+
                 <Link
                   to="/customer/my-page"
                   className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"

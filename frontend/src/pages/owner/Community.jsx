@@ -8,7 +8,7 @@
  * - 새 글 작성 모달
  */
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   MessageSquare,
   ThumbsUp,
@@ -20,21 +20,25 @@ import {
   HelpCircle,
   TrendingUp,
   MapPin,
-  Clock
-} from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import Toast from '../../components/Toast';
+  Clock,
+} from "lucide-react";
+import Navbar from "../../components/Navbar";
+import Card from "../../components/Card";
+import Button from "../../components/Button";
+import Modal from "../../components/Modal";
+import Toast from "../../components/Toast";
 
 const Community = () => {
-  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedPost, setSelectedPost] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
+  const [searchQuery, setSearchQuery] = useState("");
 
   // 더미 게시글 데이터
   const [posts, setPosts] = useState([
@@ -45,14 +49,15 @@ const Community = () => {
       title: "[긴급] 010-****-1234 주의하세요!",
       author: "홍대 중국집 사장님",
       location: "서울 마포구",
-      content: "공공기관 사칭해서 단체 예약 후 선결제 요구하더니 연락 두절됐습니다. 다른 사장님들도 조심하세요!",
+      content:
+        "공공기관 사칭해서 단체 예약 후 선결제 요구하더니 연락 두절됐습니다. 다른 사장님들도 조심하세요!",
       tags: ["사기주의", "공공기관사칭", "선결제요구"],
       likes: 12,
       comments: 3,
       views: 45,
       createdAt: "5분 전",
       isUrgent: true,
-      isLiked: false
+      isLiked: false,
     },
     {
       id: 2,
@@ -61,13 +66,14 @@ const Community = () => {
       title: "예약 관리 꿀팁 공유합니다",
       author: "강남 한식당",
       location: "서울 강남구",
-      content: "저는 예약 확정 문자에 \"취소 시 최소 3시간 전 연락 부탁드립니다\" 문구를 넣었더니 무단 취소가 70% 줄었어요!",
+      content:
+        '저는 예약 확정 문자에 "취소 시 최소 3시간 전 연락 부탁드립니다" 문구를 넣었더니 무단 취소가 70% 줄었어요!',
       tags: ["운영팁", "예약관리", "노쇼방지"],
       likes: 28,
       comments: 7,
       views: 156,
       createdAt: "2시간 전",
-      isLiked: false
+      isLiked: false,
     },
     {
       id: 3,
@@ -76,13 +82,14 @@ const Community = () => {
       title: "노쇼 고객 예약금 청구 어떻게 하나요?",
       author: "신규 사장님",
       location: "경기 수원시",
-      content: "어제 4인 예약 노쇼가 발생했는데 예약금 청구를 어떻게 진행해야 할까요?",
+      content:
+        "어제 4인 예약 노쇼가 발생했는데 예약금 청구를 어떻게 진행해야 할까요?",
       tags: ["질문", "예약금", "노쇼대응"],
       likes: 5,
       comments: 12,
       views: 89,
       createdAt: "5시간 전",
-      isLiked: false
+      isLiked: false,
     },
     {
       id: 4,
@@ -91,41 +98,69 @@ const Community = () => {
       title: "올사람 플랫폼 도입 후 노쇼율 80% 감소!",
       author: "이태원 일식",
       location: "서울 용산구",
-      content: "2개월 전 올사람 도입했는데 노쇼율이 15% → 3%로 떨어졌습니다! AI 사기 탐지 기능이 정말 유용해요 👍",
+      content:
+        "2개월 전 올사람 도입했는데 노쇼율이 15% → 3%로 떨어졌습니다! AI 사기 탐지 기능이 정말 유용해요 👍",
       tags: ["후기", "효과인증", "감사합니다"],
       likes: 45,
       comments: 15,
       views: 234,
       createdAt: "1일 전",
       isFeatured: true,
-      isLiked: false
-    }
+      isLiked: false,
+    },
   ]);
 
   // 더미 댓글 데이터
   const mockComments = {
     1: [
-      { id: 1, author: "강남 일식집", content: "저도 이 번호로 연락 왔었어요! 신고했습니다.", createdAt: "3분 전" },
-      { id: 2, author: "홍대 카페", content: "공유 감사합니다. 조심하겠습니다.", createdAt: "4분 전" },
-      { id: 3, author: "신촌 한식당", content: "이런 사기가 요즘 정말 많네요...", createdAt: "5분 전" }
+      {
+        id: 1,
+        author: "강남 일식집",
+        content: "저도 이 번호로 연락 왔었어요! 신고했습니다.",
+        createdAt: "3분 전",
+      },
+      {
+        id: 2,
+        author: "홍대 카페",
+        content: "공유 감사합니다. 조심하겠습니다.",
+        createdAt: "4분 전",
+      },
+      {
+        id: 3,
+        author: "신촌 한식당",
+        content: "이런 사기가 요즘 정말 많네요...",
+        createdAt: "5분 전",
+      },
     ],
     2: [
-      { id: 1, author: "강남역 일식", content: "좋은 정보 감사합니다! 저도 적용해봐야겠어요.", createdAt: "1시간 전" },
-      { id: 2, author: "홍대 중식당", content: "오! 바로 문자 내용 수정했습니다.", createdAt: "1시간 전" }
-    ]
+      {
+        id: 1,
+        author: "강남역 일식",
+        content: "좋은 정보 감사합니다! 저도 적용해봐야겠어요.",
+        createdAt: "1시간 전",
+      },
+      {
+        id: 2,
+        author: "홍대 중식당",
+        content: "오! 바로 문자 내용 수정했습니다.",
+        createdAt: "1시간 전",
+      },
+    ],
   };
 
   const categories = [
-    { name: '전체', icon: null },
-    { name: '사기 의심 공유', icon: '🚨' },
-    { name: '꿀팁', icon: '💡' },
-    { name: '질문', icon: '❓' }
+    { name: "전체", icon: null },
+    { name: "사기 의심 공유", icon: "🚨" },
+    { name: "꿀팁", icon: "💡" },
+    { name: "질문", icon: "❓" },
   ];
 
   // 필터된 게시글
-  const filteredPosts = posts.filter(post => {
-    const categoryMatch = selectedCategory === '전체' || post.category === selectedCategory;
-    const searchMatch = searchQuery === '' ||
+  const filteredPosts = posts.filter((post) => {
+    const categoryMatch =
+      selectedCategory === "전체" || post.category === selectedCategory;
+    const searchMatch =
+      searchQuery === "" ||
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.content.toLowerCase().includes(searchQuery.toLowerCase());
     return categoryMatch && searchMatch;
@@ -133,20 +168,22 @@ const Community = () => {
 
   // 좋아요 클릭
   const handleLike = (postId) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          isLiked: !post.isLiked
-        };
-      }
-      return post;
-    }));
+    setPosts(
+      posts.map((post) => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+            isLiked: !post.isLiked,
+          };
+        }
+        return post;
+      })
+    );
 
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find((p) => p.id === postId);
     if (!post.isLiked) {
-      setToast({ show: true, message: '공감했습니다!', type: 'success' });
+      setToast({ show: true, message: "공감했습니다!", type: "success" });
     }
   };
 
@@ -155,7 +192,9 @@ const Community = () => {
     setSelectedPost(post);
     setIsDetailModalOpen(true);
     // 조회수 증가
-    setPosts(posts.map(p => p.id === post.id ? { ...p, views: p.views + 1 } : p));
+    setPosts(
+      posts.map((p) => (p.id === post.id ? { ...p, views: p.views + 1 } : p))
+    );
   };
 
   // 새 글 작성
@@ -166,7 +205,11 @@ const Community = () => {
   // 글 작성 완료
   const handleSubmitPost = () => {
     setIsWriteModalOpen(false);
-    setToast({ show: true, message: '게시글이 작성되었습니다!', type: 'success' });
+    setToast({
+      show: true,
+      message: "게시글이 작성되었습니다!",
+      type: "success",
+    });
   };
 
   return (
@@ -188,14 +231,14 @@ const Community = () => {
         {/* 카테고리 탭 */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            {categories.map(category => (
+            {categories.map((category) => (
               <button
                 key={category.name}
                 onClick={() => setSelectedCategory(category.name)}
                 className={`px-4 py-2 rounded-lg font-semibold transition-colors whitespace-nowrap flex items-center space-x-2 ${
                   selectedCategory === category.name
-                    ? 'bg-primary-purple text-white'
-                    : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                    ? "bg-primary-purple text-white"
+                    : "bg-gray-100 text-text-secondary hover:bg-gray-200"
                 }`}
               >
                 {category.icon && <span>{category.icon}</span>}
@@ -214,23 +257,29 @@ const Community = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple"
               />
-              <Search className="absolute left-3 top-2.5 text-text-secondary" size={20} />
+              <Search
+                className="absolute left-3 top-2.5 text-text-secondary"
+                size={20}
+              />
             </div>
             <Button onClick={handleWritePost}>
-              <Plus size={20} className="mr-2" />
-              새 글 작성
+              <Plus size={20} className="mr-2" />새 글 작성
             </Button>
           </div>
         </div>
 
         {/* 게시글 목록 */}
         <div className="space-y-4">
-          {filteredPosts.map(post => (
+          {filteredPosts.map((post) => (
             <Card
               key={post.id}
               className={`hover:shadow-lg transition-shadow cursor-pointer ${
-                post.isUrgent ? 'border-2 border-red-300 bg-red-50' : ''
-              } ${post.isFeatured ? 'border-2 border-primary-purple bg-purple-50' : ''}`}
+                post.isUrgent ? "border-2 border-red-300 bg-red-50" : ""
+              } ${
+                post.isFeatured
+                  ? "border-2 border-primary-purple bg-purple-50"
+                  : ""
+              }`}
               onClick={() => handleViewDetail(post)}
             >
               <div className="flex items-start space-x-4">
@@ -292,10 +341,15 @@ const Community = () => {
                         handleLike(post.id);
                       }}
                       className={`flex items-center space-x-1 transition-colors ${
-                        post.isLiked ? 'text-primary-purple' : 'text-text-secondary hover:text-primary-purple'
+                        post.isLiked
+                          ? "text-primary-purple"
+                          : "text-text-secondary hover:text-primary-purple"
                       }`}
                     >
-                      <ThumbsUp size={18} className={post.isLiked ? 'fill-current' : ''} />
+                      <ThumbsUp
+                        size={18}
+                        className={post.isLiked ? "fill-current" : ""}
+                      />
                       <span className="font-semibold">{post.likes}</span>
                     </button>
                     <span className="flex items-center space-x-1 text-text-secondary">
@@ -325,9 +379,7 @@ const Community = () => {
         {/* 더 보기 버튼 */}
         {filteredPosts.length > 0 && (
           <div className="text-center mt-8">
-            <Button variant="outline">
-              더 보기 ▼
-            </Button>
+            <Button variant="outline">더 보기 ▼</Button>
           </div>
         )}
       </div>
@@ -385,10 +437,15 @@ const Community = () => {
                 <button
                   onClick={() => handleLike(selectedPost.id)}
                   className={`flex items-center space-x-2 transition-colors ${
-                    selectedPost.isLiked ? 'text-primary-purple' : 'text-text-secondary hover:text-primary-purple'
+                    selectedPost.isLiked
+                      ? "text-primary-purple"
+                      : "text-text-secondary hover:text-primary-purple"
                   }`}
                 >
-                  <ThumbsUp size={20} className={selectedPost.isLiked ? 'fill-current' : ''} />
+                  <ThumbsUp
+                    size={20}
+                    className={selectedPost.isLiked ? "fill-current" : ""}
+                  />
                   <span className="font-semibold">{selectedPost.likes}</span>
                 </button>
                 <span className="flex items-center space-x-2 text-text-secondary">
@@ -422,11 +479,15 @@ const Community = () => {
 
               {/* 댓글 목록 */}
               <div className="space-y-4">
-                {mockComments[selectedPost.id]?.map(comment => (
+                {mockComments[selectedPost.id]?.map((comment) => (
                   <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-text-primary">{comment.author}</span>
-                      <span className="text-sm text-text-secondary">{comment.createdAt}</span>
+                      <span className="font-semibold text-text-primary">
+                        {comment.author}
+                      </span>
+                      <span className="text-sm text-text-secondary">
+                        {comment.createdAt}
+                      </span>
                     </div>
                     <p className="text-text-secondary">{comment.content}</p>
                   </div>
@@ -495,12 +556,13 @@ const Community = () => {
 
           {/* 버튼 */}
           <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsWriteModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsWriteModalOpen(false)}
+            >
               취소
             </Button>
-            <Button onClick={handleSubmitPost}>
-              작성 완료
-            </Button>
+            <Button onClick={handleSubmitPost}>작성 완료</Button>
           </div>
         </div>
       </Modal>

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 public class BusinessController {
 
     private static final Logger log = LoggerFactory.getLogger(BusinessController.class);
@@ -25,7 +26,7 @@ public class BusinessController {
     /**
      * 로그인한 사업자의 가게 목록 조회
      */
-    @GetMapping("/api/owner/businesses")
+    @GetMapping("/owner/businesses")
     public ResponseEntity<List<BusinessResponse>> getMyBusinesses(@RequestParam Long ownerId) {
         try {
             log.info("가게 목록 조회 요청 - ownerId: {}", ownerId);
@@ -33,23 +34,41 @@ public class BusinessController {
             log.info("가게 목록 조회 성공 - ownerId: {}, 가게 수: {}", ownerId, businesses.size());
             return ResponseEntity.ok(businesses);
 
-        } catch (IllegalArgumentException e) {
-            log.warn("잘못된 요청: {}", e.getMessage());
-            throw e;
-
         } catch (Exception e) {
             log.error("가게 목록 조회 실패", e);
-            throw new IllegalStateException("가게 목록 조회 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
         }
     }
 
     /**
      * 새로운 가게 등록
      */
-    @PostMapping("/api/business")
+    @PostMapping("/business")
     public ResponseEntity<BusinessResponse> registerBusiness(@Valid @RequestBody BusinessRequestDto requestDto) {
-        log.info("가게 등록 요청 - ownerId: {}, businessName: {}", requestDto.getOwnerId(), requestDto.getBusinessName());
+        log.info("가게 등록 요청 - ownerId: {}, businessName: {}",
+                requestDto.getOwnerId(), requestDto.getBusinessName());
+
         BusinessResponse response = businessService.registerBusiness(requestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * ⭐ 단일 가게 조회 (프론트에서 비즈니스 이름 표시용)
+     */
+    @GetMapping("/business/{id}")
+    public ResponseEntity<?> getBusinessById(@PathVariable Long id) {
+        log.info("가게 단일 조회 요청 - businessId: {}", id);
+
+        BusinessResponse response = businessService.getBusinessById(id);
+
+        if (response == null) {
+            log.warn("가게 조회 실패 - businessId {} 존재하지 않음", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("가게가 존재하지 않습니다. businessId=" + id);
+        }
+
+        log.info("가게 단일 조회 성공 - businessId: {}", id);
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,13 +1,17 @@
 package com.olsaram.backend.controller.reservation;
 
+import com.olsaram.backend.domain.business.Business;
 import com.olsaram.backend.domain.reservation.Payment;
 import com.olsaram.backend.domain.reservation.Reservation;
 import com.olsaram.backend.domain.reservation.Reward;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
 import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
+import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;  // ⭐ 추가
+import com.olsaram.backend.repository.BusinessRepository;
 import com.olsaram.backend.service.reservation.PaymentService;
 import com.olsaram.backend.service.reservation.ReservationService;
 import com.olsaram.backend.service.reservation.RewardService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,9 +29,17 @@ public class ReservationController {
     private final PaymentService paymentService;
     private final RewardService rewardService;
 
-    // ─────────────────────────────────────────────
-    // 🗓️ 예약 (Reservation)
-    // ─────────────────────────────────────────────
+    private final BusinessRepository businessRepository;
+
+    // 🏪 가게 상세 조회
+    @GetMapping("/reservations/business/{businessId}")
+    public Business getBusinessById(@PathVariable Long businessId) {
+        return businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Business not found (id=" + businessId + ")"));
+    }
+
+    // 🗓️ 예약 CRUD
+
     @PostMapping("/reservations")
     public Reservation createReservation(@RequestBody Reservation reservation) {
         return reservationService.createReservation(reservation);
@@ -38,20 +50,18 @@ public class ReservationController {
         return reservationService.getAllReservations();
     }
 
-    @GetMapping("/owners/{ownerId}/reservations")
-    public List<OwnerReservationResponse> getReservationsByOwnerId(@PathVariable Long ownerId) {
-        return reservationService.getReservationsByOwnerId(ownerId);
-    }
-
     @GetMapping("/reservations/{id}")
     public Reservation getReservationById(@PathVariable Long id) {
         return reservationService.getReservationById(id)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                .orElseThrow(() -> new RuntimeException("Reservation not found (id=" + id + ")"));
     }
 
-    @DeleteMapping("/reservations/{id}")
-    public void deleteReservation(@PathVariable Long id) {
-        reservationService.deleteReservation(id);
+    @PutMapping("/reservations/{id}")
+    public Reservation updateReservation(
+            @PathVariable Long id,
+            @RequestBody Reservation request
+    ) {
+        return reservationService.updateReservation(id, request);
     }
 
     @PatchMapping("/reservations/{id}/status")
@@ -62,9 +72,24 @@ public class ReservationController {
         return reservationService.updateReservationStatus(id, request);
     }
 
-    // ─────────────────────────────────────────────
+    @DeleteMapping("/reservations/{id}")
+    public void deleteReservation(@PathVariable Long id) {
+        reservationService.deleteReservation(id);
+    }
+
+    // 🔎 고객 예약 조회
+    @GetMapping("/reservations/member/{memberId}")
+    public List<Reservation> getReservationsByMember(@PathVariable Long memberId) {
+        return reservationService.getReservationsByMemberId(memberId);
+    }
+
+    // 🧑‍🍳 사장님 예약 조회
+    @GetMapping("/owners/{ownerId}/reservations")
+    public List<OwnerReservationResponse> getReservationsByOwnerId(@PathVariable Long ownerId) {
+        return reservationService.getReservationsByOwnerId(ownerId);
+    }
+
     // 💳 결제 (Payment)
-    // ─────────────────────────────────────────────
     @PostMapping("/payments")
     public Payment createPayment(@RequestBody Payment payment) {
         return paymentService.createPayment(payment);
@@ -78,7 +103,7 @@ public class ReservationController {
     @GetMapping("/payments/{id}")
     public Payment getPaymentById(@PathVariable Long id) {
         return paymentService.getPaymentById(id)
-                .orElseThrow(() -> new RuntimeException("Payment not found"));
+                .orElseThrow(() -> new RuntimeException("Payment not found (id=" + id + ")"));
     }
 
     @DeleteMapping("/payments/{id}")
@@ -86,9 +111,7 @@ public class ReservationController {
         paymentService.deletePayment(id);
     }
 
-    // ─────────────────────────────────────────────
-    // 🎁 리워드 (Reward)
-    // ─────────────────────────────────────────────
+    // 🎁 리워드 조회/관리
     @PostMapping("/rewards")
     public Reward addReward(@RequestBody Reward reward) {
         return rewardService.addReward(reward);
@@ -102,7 +125,7 @@ public class ReservationController {
     @GetMapping("/rewards/{id}")
     public Reward getRewardById(@PathVariable Long id) {
         return rewardService.getRewardById(id)
-                .orElseThrow(() -> new RuntimeException("Reward not found"));
+                .orElseThrow(() -> new RuntimeException("Reward not found (id=" + id + ")"));
     }
 
     @DeleteMapping("/rewards/{id}")
@@ -110,16 +133,12 @@ public class ReservationController {
         rewardService.deleteReward(id);
     }
 
-    // ─────────────────────────────────────────────
-    // 🔄 예약 + 결제 + 리워드 통합 처리
-    // ─────────────────────────────────────────────
+    // 🔄 기존 full 버전 (예약 + 결제 + 리워드)
     @PostMapping("/reservations/full")
     public Map<String, Object> createFullReservation(@RequestBody Reservation reservation) {
 
-        // 1️⃣ 예약 저장
         Reservation savedReservation = reservationService.createReservation(reservation);
 
-        // 2️⃣ 결제 처리 (예약 직후 결제 자동 생성)
         Payment payment = Payment.builder()
                 .reservationId(savedReservation.getId())
                 .paymentMethod("CARD")
@@ -128,7 +147,6 @@ public class ReservationController {
                 .build();
         Payment savedPayment = paymentService.createPayment(payment);
 
-        // 3️⃣ 리워드 적립 (예약한 회원에게 포인트 부여)
         Reward reward = Reward.builder()
                 .memberId(savedReservation.getMemberId())
                 .points(200)
@@ -136,12 +154,21 @@ public class ReservationController {
                 .build();
         Reward savedReward = rewardService.addReward(reward);
 
-        // 4️⃣ 통합 응답 반환
         Map<String, Object> response = new HashMap<>();
         response.put("reservation", savedReservation);
         response.put("payment", savedPayment);
         response.put("reward", savedReward);
 
         return response;
+    }
+
+
+    // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 
+    // 🔥 새로운 모의 결제 API (프론트에서 호출하는 것)
+    // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 
+
+    @PostMapping("/reservations/full-pay")
+    public Reservation createWithPayment(@RequestBody ReservationFullPayRequest req) {
+        return reservationService.createWithPayment(req);
     }
 }

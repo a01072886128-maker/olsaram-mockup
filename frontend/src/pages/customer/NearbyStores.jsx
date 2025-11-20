@@ -79,13 +79,12 @@ function NearbyStores() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
 
-  // 필터 & UI
+  // UI 필터
   const [radiusFilter, setRadiusFilter] = useState(800);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showTodayOnly, setShowTodayOnly] = useState(false);
   const [showRadiusDropdown, setShowRadiusDropdown] = useState(false);
 
-  // 모달
   const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   // 카카오 지도 스크립트 로드
@@ -100,7 +99,7 @@ function NearbyStores() {
     }
   }, []);
 
-  // 페이지 진입 시 위치 권한 모달 표시
+  // 첫 진입 → 위치 권한 모달 표시
   useEffect(() => {
     if (step === "initial") {
       setShowPermissionModal(true);
@@ -114,7 +113,6 @@ function NearbyStores() {
     setIsLoading(true);
 
     if (!navigator.geolocation) {
-      console.error("❌ Geolocation API 미지원");
       setLocation(DEFAULT_LOCATION);
       setStep("located");
       fetchNearbyStores(
@@ -128,13 +126,12 @@ function NearbyStores() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log("✅ 위치 획득 성공:", latitude, longitude);
         setLocation({ lat: latitude, lng: longitude, name: "현재 위치" });
         setStep("located");
         fetchNearbyStores(latitude, longitude, radiusFilter);
       },
-      (error) => {
-        console.error("❌ 위치 권한 오류:", error);
+      (err) => {
+        console.log("위치 권한 오류:", err);
         setLocation(DEFAULT_LOCATION);
         setStep("located");
         fetchNearbyStores(
@@ -151,7 +148,7 @@ function NearbyStores() {
     );
   };
 
-  // 위치 권한 나중에
+  // 위치 권한 거부
   const handleDenyLocation = () => {
     setShowPermissionModal(false);
     setLocation(DEFAULT_LOCATION);
@@ -159,25 +156,25 @@ function NearbyStores() {
     fetchNearbyStores(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng, radiusFilter);
   };
 
-  // 맛집 검색
+  // 주변 매장 조회
   const fetchNearbyStores = async (lat, lng, radius) => {
     try {
       setIsLoading(true);
       const data = await storeAPI.getNearbyStores(lat, lng, radius);
       setStores(data.stores || data || []);
     } catch (err) {
-      console.error("맛집 검색 오류:", err);
+      console.error("매장 검색 오류:", err);
       setStores([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 반경 필터 변경
+  // 반경 변경
   const handleRadiusChange = (newRadius) => {
     setRadiusFilter(newRadius);
     setShowRadiusDropdown(false);
-    if (location && location.lat && location.lng) {
+    if (location) {
       fetchNearbyStores(location.lat, location.lng, newRadius);
     }
   };
@@ -198,39 +195,33 @@ function NearbyStores() {
   // 검색 처리
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // 최근 검색어에 추가
-      const newRecentSearches = [
-        searchQuery,
-        ...recentSearches.filter((s) => s !== searchQuery),
-      ].slice(0, 5);
-      setRecentSearches(newRecentSearches);
-      localStorage.setItem("recentSearches", JSON.stringify(newRecentSearches));
-    }
+
+    if (!searchQuery.trim()) return;
+
+    const newHist = [
+      searchQuery,
+      ...recentSearches.filter((v) => v !== searchQuery),
+    ].slice(0, 5);
+
+    setRecentSearches(newHist);
+    localStorage.setItem("recentSearches", JSON.stringify(newHist));
   };
 
-  // 검색어 변경
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  // 최근 검색어 불러오기
+  // 최근 검색어 로드
   useEffect(() => {
     const saved = localStorage.getItem("recentSearches");
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
+    if (saved) setRecentSearches(JSON.parse(saved));
   }, []);
 
-  // 필터링된 맛집 목록
+  // 검색 + 필터링
   const filteredStores = stores.filter((store) => {
-    // 검색어 필터링
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const matchesName = store.name?.toLowerCase().includes(query);
-      const matchesCategory = store.category?.toLowerCase().includes(query);
-      const matchesMenu = store.menu?.toLowerCase().includes(query);
-      if (!matchesName && !matchesCategory && !matchesMenu) {
+      const q = searchQuery.toLowerCase();
+      if (
+        !store.name?.toLowerCase().includes(q) &&
+        !store.category?.toLowerCase().includes(q) &&
+        !store.menu?.toLowerCase().includes(q)
+      ) {
         return false;
       }
     }
@@ -238,112 +229,97 @@ function NearbyStores() {
     if (
       categoryFilter !== "all" &&
       getCategoryKey(store.category) !== categoryFilter
-    ) {
+    )
       return false;
-    }
-    if (showTodayOnly && !store.availableToday) {
-      return false;
-    }
+
+    if (showTodayOnly && !store.availableToday) return false;
+
     return true;
   });
 
-  // 카카오맵 초기화
+  // 카카오맵 로드
   useEffect(() => {
     if (step === "located" && location && mapRef.current) {
-      // 카카오 SDK 로드 대기 (최대 5초)
       let attempts = 0;
-      const maxAttempts = 50;
+      const maxTry = 50;
 
-      const checkKakaoLoaded = () => {
+      const check = () => {
         if (window.kakao && window.kakao.maps) {
-          console.log("✅ Kakao Maps SDK loaded successfully");
-          window.kakao.maps.load(() => {
-            initializeMap();
-          });
-        } else if (attempts < maxAttempts) {
+          window.kakao.maps.load(() => initializeMap());
+        } else if (attempts < maxTry) {
           attempts++;
-          setTimeout(checkKakaoLoaded, 100);
-        } else {
-          console.error("❌ Kakao Maps SDK failed to load after 5 seconds");
+          setTimeout(check, 100);
         }
       };
 
-      checkKakaoLoaded();
+      check();
     }
   }, [step, location]);
 
-  // 맵 마커 업데이트
+  // 지도 초기화
+  const initializeMap = () => {
+    if (!window.kakao || !window.kakao.maps) return;
+
+    const zoomLevel = radiusFilter <= 1000 ? 3 : radiusFilter <= 3000 ? 5 : 7;
+
+    const map = new window.kakao.maps.Map(mapRef.current, {
+      center: new window.kakao.maps.LatLng(location.lat, location.lng),
+      level: zoomLevel,
+    });
+
+    mapInstance.current = map;
+
+    // 현재 위치 마커
+    const curr = new window.kakao.maps.CustomOverlay({
+      position: new window.kakao.maps.LatLng(location.lat, location.lng),
+      content:
+        '<div style="width:24px;height:24px;background:#2563eb;border:4px solid white;border-radius:50%;"></div>',
+      yAnchor: 0.5,
+    });
+
+    curr.setMap(map);
+  };
+
+  // 매장 마커 갱신
   useEffect(() => {
     if (mapInstance.current && filteredStores.length > 0) {
       updateMapMarkers();
     }
   }, [filteredStores]);
 
-  const initializeMap = () => {
-    if (!window.kakao || !window.kakao.maps) {
-      console.error("Kakao Maps SDK not loaded");
-      return;
-    }
-
-    const container = mapRef.current;
-    const zoomLevel = radiusFilter <= 1000 ? 3 : radiusFilter <= 3000 ? 5 : 7;
-
-    const options = {
-      center: new window.kakao.maps.LatLng(location.lat, location.lng),
-      level: zoomLevel,
-    };
-
-    const map = new window.kakao.maps.Map(container, options);
-    mapInstance.current = map;
-
-    // 현재 위치 마커
-    const currentMarkerContent =
-      '<div style="width:24px;height:24px;background:#4285f4;border:4px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>';
-    const currentMarker = new window.kakao.maps.CustomOverlay({
-      position: new window.kakao.maps.LatLng(location.lat, location.lng),
-      content: currentMarkerContent,
-      yAnchor: 0.5,
-    });
-    currentMarker.setMap(map);
-  };
-
   const updateMapMarkers = () => {
     if (!mapInstance.current) return;
 
-    // 기존 마커 제거
-    markersRef.current.forEach((marker) => marker.setMap(null));
+    markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    // 새 마커 추가
     filteredStores.forEach((store) => {
-      if (store.latitude && store.longitude) {
-        const lat = parseFloat(store.latitude);
-        const lng = parseFloat(store.longitude);
-        const position = new window.kakao.maps.LatLng(lat, lng);
+      if (!store.latitude || !store.longitude) return;
 
-        // 할인율이 있으면 커스텀 마커, 없으면 기본 마커
-        if (store.noShowDiscount) {
-          const markerContent = `
-            <div style="position:relative;">
-              <div style="background:#ef4444;color:white;font-weight:bold;font-size:11px;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);">
-                📍 ${store.noShowDiscount}% ${store.name}
-              </div>
+      const pos = new window.kakao.maps.LatLng(
+        parseFloat(store.latitude),
+        parseFloat(store.longitude)
+      );
+
+      if (store.noShowDiscount) {
+        const overlay = new window.kakao.maps.CustomOverlay({
+          position: pos,
+          content: `
+            <div style="background:#ef4444;color:white;padding:4px 8px;border-radius:12px;font-size:11px;">
+              📍 ${store.noShowDiscount}% ${store.name}
             </div>
-          `;
-          const customMarker = new window.kakao.maps.CustomOverlay({
-            position: position,
-            content: markerContent,
-            yAnchor: 1.5,
-          });
-          customMarker.setMap(mapInstance.current);
-          markersRef.current.push(customMarker);
-        } else {
-          const marker = new window.kakao.maps.Marker({
-            position: position,
-            map: mapInstance.current,
-          });
-          markersRef.current.push(marker);
-        }
+          `,
+          yAnchor: 1.5,
+        });
+
+        overlay.setMap(mapInstance.current);
+        markersRef.current.push(overlay);
+      } else {
+        const marker = new window.kakao.maps.Marker({
+          position: pos,
+          map: mapInstance.current,
+        });
+        markersRef.current.push(marker);
       }
     });
   };
@@ -364,10 +340,11 @@ function NearbyStores() {
           <div className="flex items-center gap-8">
             <Link
               to="/"
-              className="text-xl font-bold text-slate-900 hover:text-blue-600 transition-colors"
+              className="text-xl font-bold text-slate-900 hover:text-blue-600"
             >
               올사람
             </Link>
+
             <nav className="hidden md:flex gap-6">
               <Link
                 to="/customer/nearby"
@@ -377,37 +354,37 @@ function NearbyStores() {
               </Link>
               <Link
                 to="/customer/voice-reservation"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                className="text-sm text-slate-600 hover:text-slate-900"
               >
                 음성 예약
               </Link>
               <Link
                 to="/customer/community"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                className="text-sm text-slate-600 hover:text-slate-900"
               >
                 커뮤니티
               </Link>
               <Link
                 to="/customer/my-page"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                className="text-sm text-slate-600 hover:text-slate-900"
               >
                 마이페이지
               </Link>
             </nav>
           </div>
+
           <div className="flex items-center gap-3">
             <span className="text-sm text-slate-600">
               {user?.name || "고객"}님
             </span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-1" />
-              로그아웃
+              <LogOut className="w-4 h-4 mr-1" /> 로그아웃
             </Button>
           </div>
         </div>
       </header>
 
-      {/* 위치 권한 요청 모달 */}
+      {/* 위치 권한 모달 */}
       <Dialog open={showPermissionModal} onClose={() => {}}>
         <DialogHeader>
           <div className="flex justify-center mb-4">
@@ -415,34 +392,35 @@ function NearbyStores() {
               <MapPin className="w-8 h-8 text-blue-600" />
             </div>
           </div>
+
           <DialogTitle className="text-center">
             내 주변 맛집을 찾아드립니다
           </DialogTitle>
           <DialogDescription className="text-center">
-            현재 위치를 기반으로 가까운 맛집을 추천해드립니다.
+            현재 위치 기반으로 가까운 맛집을 추천해드립니다.
             <br />
             위치 권한을 허용해주세요.
           </DialogDescription>
         </DialogHeader>
+
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
+            className="w-full"
             onClick={handleDenyLocation}
-            className="w-full sm:w-auto"
           >
             나중에
           </Button>
           <Button
+            className="w-full bg-blue-600 hover:bg-blue-700"
             onClick={handleAllowLocation}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
           >
-            <MapPin className="w-4 h-4 mr-2" />
-            허용하기
+            <MapPin className="w-4 h-4 mr-2" /> 허용하기
           </Button>
         </DialogFooter>
       </Dialog>
 
-      {/* 로딩 중 */}
+      {/* 로딩 */}
       {isLoading && step === "requesting" && (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-16 h-16 text-blue-600 animate-spin mb-4" />
@@ -452,50 +430,49 @@ function NearbyStores() {
         </div>
       )}
 
-      {/* 메인 컨텐츠 */}
+      {/* 메인 */}
       {step === "located" && (
         <div className="bg-gray-50 min-h-[calc(100vh-4rem)]">
           <div className="container mx-auto px-4 py-4">
-            {/* 통합 검색바 */}
+            {/* 검색바 */}
             <div className="mb-4">
               <form onSubmit={handleSearch} className="relative">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() =>
-                      setTimeout(() => setSearchFocused(false), 200)
-                    }
-                    placeholder="짜장면, 신라면옥, 이탈리안 레스토랑..."
-                    className="w-full pl-12 pr-20 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none shadow-sm hover:border-gray-400 transition-colors"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="음성 검색"
-                  >
-                    <Mic className="w-5 h-5 text-slate-500" />
-                  </button>
-                </div>
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
 
-                {/* 최근 검색어 드롭다운 */}
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  className="w-full pl-12 pr-20 py-4 text-lg border-2 border-gray-300 rounded-xl"
+                  placeholder="짜장면, 신라면옥, 이탈리안 레스토랑..."
+                />
+
+                <button
+                  type="button"
+                  title="음성 검색"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <Mic className="w-5 h-5 text-slate-500" />
+                </button>
+
+                {/* 최근 검색어 */}
                 {searchFocused && recentSearches.length > 0 && (
-                  <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-30">
+                  <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-xl border py-2 z-30">
                     <div className="px-4 py-2 text-xs text-slate-500 font-semibold">
                       최근 검색어
                     </div>
-                    {recentSearches.map((term, index) => (
+
+                    {recentSearches.map((term, i) => (
                       <button
-                        key={index}
+                        key={i}
                         type="button"
                         onClick={() => setSearchQuery(term)}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
                       >
                         <Clock className="w-4 h-4 text-slate-400" />
-                        <span className="text-slate-700">{term}</span>
+                        <span>{term}</span>
                       </button>
                     ))}
                   </div>
@@ -503,33 +480,31 @@ function NearbyStores() {
               </form>
             </div>
 
-            {/* 상단 필터 영역 */}
+            {/* 상단 필터 */}
             <div className="space-y-3 mb-4">
-              {/* 거리 필터 드롭다운 */}
+              {/* 반경 선택 */}
               <div className="relative inline-block">
                 <button
                   onClick={() => setShowRadiusDropdown(!showRadiusDropdown)}
-                  className="bg-white rounded-lg shadow px-4 py-2.5 flex items-center gap-2 hover:bg-gray-50 transition-colors border border-gray-200"
+                  className="bg-white rounded-lg shadow px-4 py-2.5 flex items-center gap-2 border"
                 >
-                  <span className="font-semibold text-slate-900">
-                    주변 {selectedRadiusLabel}
-                  </span>
+                  주변 {selectedRadiusLabel}
                   <ChevronDown className="w-4 h-4 text-slate-500" />
                 </button>
 
                 {showRadiusDropdown && (
-                  <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[120px] z-20">
+                  <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border py-2 min-w-[120px] z-20">
                     {DISTANCE_FILTERS.map((filter) => (
                       <button
                         key={filter.value}
                         onClick={() => handleRadiusChange(filter.value)}
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between ${
                           radiusFilter === filter.value
                             ? "text-blue-600 font-semibold"
-                            : "text-slate-700"
+                            : ""
                         }`}
                       >
-                        <span>{filter.label}</span>
+                        {filter.label}
                         {radiusFilter === filter.value && (
                           <Check className="w-4 h-4" />
                         )}
@@ -540,50 +515,42 @@ function NearbyStores() {
               </div>
 
               {/* 필터 바 */}
-              <div className="bg-white rounded-lg shadow border border-gray-200 p-3 space-y-3">
-                {/* 정렬 옵션 */}
+              <div className="bg-white rounded-lg shadow border p-3 space-y-3">
+                {/* 정렬 */}
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {SORT_OPTIONS.map((option) => (
+                  {SORT_OPTIONS.map((opt) => (
                     <Button
-                      key={option}
+                      key={opt}
                       variant="outline"
                       size="sm"
-                      className="flex-shrink-0 rounded-full"
+                      className="rounded-full"
                     >
-                      {option}
+                      {opt}
                     </Button>
                   ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-shrink-0 rounded-full"
-                  >
+                  <Button variant="outline" size="sm" className="rounded-full">
                     필터
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-shrink-0 rounded-full"
-                  >
+                  <Button variant="outline" size="sm" className="rounded-full">
                     내 주변
                   </Button>
                 </div>
 
-                {/* 카테고리 아이콘 버튼 */}
+                {/* 카테고리 */}
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setCategoryFilter(cat.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all flex-shrink-0 min-w-[70px] ${
+                      className={`flex flex-col items-center p-3 rounded-lg border-2 min-w-[70px] ${
                         categoryFilter === cat.id
                           ? "border-blue-600 bg-blue-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
+                          : "border-gray-200 bg-white"
                       }`}
                     >
                       <span className="text-2xl mb-1">{cat.icon}</span>
                       <span
-                        className={`text-xs font-medium ${
+                        className={`text-xs ${
                           categoryFilter === cat.id
                             ? "text-blue-600"
                             : "text-slate-700"
@@ -595,18 +562,18 @@ function NearbyStores() {
                   ))}
                 </div>
 
-                {/* 오늘예약 매장 보기 체크박스 */}
+                {/* 오늘 예약 */}
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="todayOnly"
                     checked={showTodayOnly}
                     onChange={(e) => setShowTodayOnly(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4"
                   />
                   <label
                     htmlFor="todayOnly"
-                    className="flex items-center gap-1 text-sm font-medium text-slate-700 cursor-pointer"
+                    className="text-sm flex items-center gap-1"
                   >
                     <Zap className="w-4 h-4 text-orange-500" />
                     오늘예약 매장 보기
@@ -615,17 +582,17 @@ function NearbyStores() {
               </div>
             </div>
 
-            {/* 지도와 리스트 그리드 */}
+            {/* 지도 + 리스트 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* 왼쪽: 지도 */}
+              {/* 지도 */}
               <div
-                className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
+                className="bg-white rounded-lg shadow border overflow-hidden"
                 style={{ height: "500px" }}
               >
                 <div ref={mapRef} className="w-full h-full" />
               </div>
 
-              {/* 오른쪽: 맛집 리스트 */}
+              {/* 오른쪽 리스트 */}
               <div
                 className="space-y-3"
                 style={{ maxHeight: "500px", overflowY: "auto" }}
@@ -649,111 +616,125 @@ function NearbyStores() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                     >
-                      <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
-                        <CardContent className="p-4">
-                          <div className="flex gap-3">
-                            {/* 이미지 */}
-                            <div className="relative flex-shrink-0">
-                              {store.imageUrl && (
-                                <img
-                                  src={store.imageUrl}
-                                  alt={store.name}
-                                  className="w-24 h-24 object-cover rounded-lg"
-                                />
-                              )}
-                              {/* 노쇼제로 할인 뱃지 */}
-                              {store.noShowDiscount && (
-                                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-                                  <TrendingDown className="w-3 h-3" />
-                                  {store.noShowDiscount}% OFF
-                                </div>
-                              )}
-                            </div>
+                      {/* ⭐⭐ 여기만 추가됨 → 상세페이지 이동 가능 ⭐⭐ */}
+                      <Link
+                        to={`/customer/store/${store.id}`}
+                        className="block"
+                      >
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
+                          <CardContent className="p-4">
+                            <div className="flex gap-3">
+                              {/* 이미지 */}
+                              <div className="relative flex-shrink-0">
+                                {store.imageUrl && (
+                                  <img
+                                    src={store.imageUrl}
+                                    alt={store.name}
+                                    className="w-24 h-24 object-cover rounded-lg"
+                                  />
+                                )}
 
-                            {/* 매장 정보 */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-bold text-lg text-slate-900 truncate">
-                                    {store.name}
-                                  </h3>
-                                  {/* 신뢰 등급 */}
-                                  {store.trustLevel && (
-                                    <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs flex items-center gap-1">
-                                      <Shield className="w-3 h-3" />
-                                      신뢰가게
+                                {store.noShowDiscount && (
+                                  <div className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                                    <TrendingDown className="w-3 h-3" />
+                                    {store.noShowDiscount}% OFF
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 정보 */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-lg text-slate-900 truncate">
+                                      {store.name}
+                                    </h3>
+
+                                    {store.trustLevel && (
+                                      <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs flex items-center gap-1">
+                                        <Shield className="w-3 h-3" />
+                                        신뢰가게
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {store.distance !== null && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs flex-shrink-0 ml-2"
+                                    >
+                                      {store.distance < 1
+                                        ? `${Math.round(
+                                            store.distance * 1000
+                                          )}m`
+                                        : `${store.distance.toFixed(1)}km`}
                                     </Badge>
                                   )}
                                 </div>
-                                {store.distance !== null && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs flex-shrink-0 ml-2"
-                                  >
-                                    {store.distance < 1
-                                      ? `${Math.round(store.distance * 1000)}m`
-                                      : `${store.distance.toFixed(1)}km`}
-                                  </Badge>
-                                )}
-                              </div>
 
-                              {/* 평점 & 카테고리 */}
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <div className="flex items-center gap-1">
-                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                  <span className="font-bold text-sm">
-                                    {store.rating?.toFixed(1) || "0.0"}
+                                {/* 평점 */}
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                  <div className="flex items-center gap-1">
+                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                    <span className="font-bold text-sm">
+                                      {store.rating?.toFixed(1) || "0.0"}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-slate-500">
+                                    ({store.reviewCount || 0})
                                   </span>
+
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {store.category}
+                                  </Badge>
                                 </div>
-                                <span className="text-xs text-slate-500">
-                                  ({store.reviewCount || 0})
-                                </span>
-                                <Badge variant="secondary" className="text-xs">
-                                  {store.category}
-                                </Badge>
-                              </div>
 
-                              {/* 줄서기 제로 & 예약 가능 여부 */}
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                {store.waitTime !== undefined && (
-                                  <Badge
-                                    className={`text-xs flex items-center gap-1 ${
-                                      store.waitTime === 0
-                                        ? "bg-green-100 text-green-700 border-green-300"
-                                        : "bg-orange-100 text-orange-700 border-orange-300"
-                                    }`}
-                                  >
-                                    {store.waitTime === 0 ? (
-                                      <>
-                                        <Zap className="w-3 h-3" />
-                                        즉시 입장
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Clock className="w-3 h-3" />
-                                        {store.waitTime}분 대기
-                                      </>
-                                    )}
-                                  </Badge>
-                                )}
-                                {store.popularityScore && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs flex items-center gap-1"
-                                  >
-                                    <Users2 className="w-3 h-3" />
-                                    인기 {store.popularityScore}
-                                  </Badge>
-                                )}
-                              </div>
+                                {/* 줄서기 */}
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  {store.waitTime !== undefined && (
+                                    <Badge
+                                      className={`text-xs flex items-center gap-1 ${
+                                        store.waitTime === 0
+                                          ? "bg-green-100 text-green-700 border-green-300"
+                                          : "bg-orange-100 text-orange-700 border-orange-300"
+                                      }`}
+                                    >
+                                      {store.waitTime === 0 ? (
+                                        <>
+                                          <Zap className="w-3 h-3" />
+                                          즉시 입장
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Clock className="w-3 h-3" />
+                                          {store.waitTime}분 대기
+                                        </>
+                                      )}
+                                    </Badge>
+                                  )}
 
-                              <p className="text-xs text-slate-500 truncate">
-                                {store.address}
-                              </p>
+                                  {store.popularityScore && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs flex items-center gap-1"
+                                    >
+                                      <Users2 className="w-3 h-3" />
+                                      인기 {store.popularityScore}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                <p className="text-xs text-slate-500 truncate">
+                                  {store.address}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </Link>
                     </motion.div>
                   ))
                 )}

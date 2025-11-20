@@ -1,10 +1,3 @@
-/**
- * 사장님 대시보드 - KT 스타일
- *
- * 업주용 메인 대시보드
- * KT 사장님Easy의 깔끔한 디자인 스타일 적용
- */
-
 import { Link, useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -18,7 +11,8 @@ import {
   Shield,
   LogOut,
 } from "lucide-react";
-import Navbar from "../../components/Navbar";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import StatCard from "../../components/StatCard";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
@@ -26,18 +20,57 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
+  // 🔥 로그인된 사장님 ID
+  const ownerId = user?.ownerId;
+
+  const [todayReservations, setTodayReservations] = useState([]);
+
+  // ------------------------------------------------------
+  // 🔥 오늘 예약 불러오기
+  // ------------------------------------------------------
+  useEffect(() => {
+    if (!ownerId) return;
+
+    axios
+      .get(`http://localhost:8080/api/owners/${ownerId}/reservations`)
+      .then((res) => {
+        // 오늘 날짜 기준 필터링
+        const today = new Date().toISOString().slice(0, 10);
+
+        const mapped = res.data
+          .filter((r) => r.reservationTime.startsWith(today))
+          .map((item) => ({
+            id: item.id,
+            customerName: item.customerName || "고객",
+            trustLevel: "단골",
+            stars: 3,
+            time: item.reservationTime.substring(11, 16),
+            partySize: item.people,
+            status: item.status === "CONFIRMED" ? "confirmed" : "pending",
+            menu: item.menu || "메뉴 정보 없음",
+            paymentStatus: item.paymentStatus,
+          }));
+
+        setTodayReservations(mapped);
+      })
+      .catch((err) => console.error("예약 데이터를 불러오는 중 오류:", err));
+  }, [ownerId]);
+
+  // ⭐ 신뢰등급 색상
+  const trustLevelColors = {
+    단골: "text-yellow-500",
+    우수: "text-primary-green",
+    새싹: "text-light-green",
   };
-  // 더미 통계 데이터
+
+  // ⭐ 통계 카드는 UI 유지
   const stats = [
     {
       icon: <Calendar />,
       title: "오늘 예약",
-      value: "24건",
+      value: `${todayReservations.length}건`,
       change: "+12% 전일 대비",
       changeType: "positive",
     },
@@ -64,60 +97,16 @@ const Dashboard = () => {
     },
   ];
 
-  // 더미 예약 데이터
-  const todayReservations = [
-    {
-      id: 1,
-      customerName: "김민수",
-      trustLevel: "단골",
-      stars: 5,
-      time: "11:30",
-      partySize: 2,
-      status: "confirmed",
-      menu: "런치 세트 A",
-    },
-    {
-      id: 2,
-      customerName: "이지현",
-      trustLevel: "새싹",
-      stars: 1,
-      time: "12:00",
-      partySize: 4,
-      status: "confirmed",
-      menu: "특선 코스",
-    },
-    {
-      id: 3,
-      customerName: "박준호",
-      trustLevel: "우수",
-      stars: 3,
-      time: "12:30",
-      partySize: 3,
-      status: "pending",
-      menu: "일반 메뉴",
-    },
-    {
-      id: 4,
-      customerName: "최수진",
-      trustLevel: "단골",
-      stars: 5,
-      time: "18:00",
-      partySize: 6,
-      status: "confirmed",
-      menu: "디너 코스 B",
-    },
-  ];
-
-  // 신뢰 등급별 색상
-  const trustLevelColors = {
-    단골: "text-yellow-500",
-    우수: "text-primary-green",
-    새싹: "text-light-green",
+  const handleLogout = () => {
+    logout();
+    navigate("/", { replace: true });
   };
+
+  // ------------------------------------------------------
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - KT 스타일 */}
+      {/* Header */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -141,7 +130,7 @@ const Dashboard = () => {
                 to="/owner/fraud-detection"
                 className="text-text-secondary hover:text-text-primary"
               >
-                사기 탐지
+                노쇼 탐지
               </Link>
               <Link
                 to="/owner/menu-ocr"
@@ -157,6 +146,7 @@ const Dashboard = () => {
               </Link>
             </nav>
           </div>
+
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -178,21 +168,20 @@ const Dashboard = () => {
         {/* 환영 메시지 */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2 text-text-primary">
-            안녕하세요, 홍대 중국집님
+            안녕하세요, {user?.name || "사장님"}님
           </h2>
           <p className="text-text-secondary">
             오늘도 노쇼 걱정 없는 하루 되세요!
           </p>
         </div>
 
-        {/* 통계 카드 - KT 스타일 4열 */}
+        {/* 통계 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <StatCard key={index} {...stat} />
           ))}
         </div>
 
-        {/* 메인 콘텐츠 영역 */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* 오늘의 예약 */}
           <div className="lg:col-span-2">
@@ -203,6 +192,8 @@ const Dashboard = () => {
                     <Calendar className="mr-2 text-primary-green" size={24} />
                     오늘의 예약
                   </h2>
+
+                  {/* 🔥 전체보기 버튼 — 예약관리 페이지와 데이터 공유됨 */}
                   <Link to="/owner/reservations">
                     <Button size="sm" variant="outline">
                       전체보기
@@ -211,69 +202,94 @@ const Dashboard = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {todayReservations.map((reservation) => (
-                    <div
-                      key={reservation.id}
-                      className="border border-border-color rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="font-bold text-text-primary text-lg">
-                              {reservation.customerName}
-                            </span>
-                            <span
-                              className={`text-sm ${
-                                trustLevelColors[reservation.trustLevel]
-                              }`}
-                            >
-                              {reservation.trustLevel}{" "}
-                              {"⭐".repeat(reservation.stars)}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-4 text-sm text-text-secondary">
-                            <span className="flex items-center">
-                              <Clock size={16} className="mr-1" />
-                              {reservation.time}
-                            </span>
-                            <span className="flex items-center">
-                              <Users size={16} className="mr-1" />
-                              {reservation.partySize}명
-                            </span>
-                          </div>
-                          <p className="text-sm text-text-secondary mt-1">
-                            메뉴: {reservation.menu}
-                          </p>
-                        </div>
-                        <div>
-                          {reservation.status === "confirmed" ? (
-                            <div className="flex items-center text-primary-green text-sm font-semibold">
-                              <CheckCircle size={16} className="mr-1" />
-                              확정
+                  {todayReservations.length === 0 ? (
+                    <p className="text-center text-text-secondary">
+                      오늘 예약 내역이 아직 없습니다.
+                    </p>
+                  ) : (
+                    todayReservations.map((reservation) => (
+                      <div
+                        key={reservation.id}
+                        className="border border-border-color rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-bold text-text-primary text-lg">
+                                {reservation.customerName}
+                              </span>
+                              <span
+                                className={`text-sm ${
+                                  trustLevelColors[reservation.trustLevel]
+                                }`}
+                              >
+                                {reservation.trustLevel}{" "}
+                                {"⭐".repeat(reservation.stars)}
+                              </span>
                             </div>
-                          ) : (
-                            <div className="flex items-center text-yellow-600 text-sm font-semibold">
-                              <AlertCircle size={16} className="mr-1" />
-                              대기
+
+                            <div className="flex items-center space-x-4 text-sm text-text-secondary">
+                              <span className="flex items-center">
+                                <Clock size={16} className="mr-1" />
+                                {reservation.time}
+                              </span>
+                              <span className="flex items-center">
+                                <Users size={16} className="mr-1" />
+                                {reservation.partySize}명
+                              </span>
                             </div>
-                          )}
+
+                            <p className="text-sm text-text-secondary mt-1">
+                              메뉴: {reservation.menu}
+                            </p>
+                          </div>
+
+                          <div>
+                            {reservation.status === "confirmed" ? (
+                              <div className="flex items-center text-primary-green text-sm font-semibold">
+                                <CheckCircle size={16} className="mr-1" />
+                                확정
+                              </div>
+                            ) : (
+                              <div className="flex items-center text-yellow-600 text-sm font-semibold">
+                                <AlertCircle size={16} className="mr-1" />
+                                대기
+                              </div>
+                            )}
+                            <div className="mt-2">
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-semibold ${
+                                  reservation.paymentStatus === "PAID"
+                                    ? "bg-green-100 text-green-700"
+                                    : reservation.paymentStatus === "PENDING"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : reservation.paymentStatus === "REFUND"
+                                    ? "bg-purple-100 text-purple-700"
+                                    : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                결제 상태:{" "}
+                                {reservation.paymentStatus || "UNPAID"}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </Card>
           </div>
 
-          {/* 사이드바 */}
+          {/* 우측 패널 */}
           <div className="space-y-6">
-            {/* 빠른 액션 */}
             <Card>
               <div className="p-6">
                 <h2 className="text-xl font-bold text-text-primary mb-6">
                   빠른 액션
                 </h2>
+
                 <div className="space-y-3">
                   <Link to="/owner/reservations">
                     <button className="w-full bg-primary-green hover:bg-dark-green text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
@@ -281,12 +297,14 @@ const Dashboard = () => {
                       예약 추가하기
                     </button>
                   </Link>
+
                   <Link to="/owner/menu-ocr">
                     <button className="w-full bg-primary-purple hover:bg-dark-purple text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
                       <TrendingUp className="mr-2" size={20} />
                       메뉴 등록 (OCR)
                     </button>
                   </Link>
+
                   <Link to="/owner/fraud-detection">
                     <button className="w-full border-2 border-primary-green text-primary-green hover:bg-primary-green hover:text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
                       <Shield className="mr-2" size={20} />
@@ -297,12 +315,12 @@ const Dashboard = () => {
               </div>
             </Card>
 
-            {/* 이번 주 성과 */}
             <Card>
               <div className="p-6">
                 <h3 className="text-lg font-bold text-text-primary mb-4">
                   이번 주 성과
                 </h3>
+
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
@@ -317,9 +335,10 @@ const Dashboard = () => {
                       <div
                         className="bg-primary-green h-2 rounded-full"
                         style={{ width: "78%" }}
-                      ></div>
+                      />
                     </div>
                   </div>
+
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-text-secondary">예약 달성률</span>
@@ -331,9 +350,10 @@ const Dashboard = () => {
                       <div
                         className="bg-primary-purple h-2 rounded-full"
                         style={{ width: "92%" }}
-                      ></div>
+                      />
                     </div>
                   </div>
+
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-text-secondary">노쇼 방지율</span>
@@ -345,7 +365,7 @@ const Dashboard = () => {
                       <div
                         className="bg-dark-green h-2 rounded-full"
                         style={{ width: "96.8%" }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 </div>

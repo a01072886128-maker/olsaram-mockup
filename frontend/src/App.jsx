@@ -41,6 +41,10 @@ import CustomerMyPage from "./pages/customer/MyPage.jsx";
 import NearbyStores from "./pages/customer/NearbyStores";
 import CustomerCommunity from "./pages/customer/Community.jsx";
 
+// ⭐⭐⭐ NEW: 가게 상세 페이지 + 예약 입력 페이지 ⭐⭐⭐
+import StoreDetail from "./pages/customer/StoreDetail";
+import StoreReserve from "./pages/customer/StoreReserve"; // ⭐ 추가됨
+
 function RequireOwnerAuth({ children }) {
   const { status } = useAuth();
 
@@ -203,7 +207,27 @@ function App() {
           }
         />
 
-        {/* 404 페이지 (없을 경우 랜딩으로 리다이렉트) */}
+        {/* ⭐⭐⭐ NEW: 고객 가게 상세 페이지 ⭐⭐⭐ */}
+        <Route
+          path="/customer/store/:storeId"
+          element={
+            <RequireCustomerAuth>
+              <StoreDetail />
+            </RequireCustomerAuth>
+          }
+        />
+
+        {/* ⭐⭐⭐ NEW: 고객 예약 입력 페이지 ⭐⭐⭐ */}
+        <Route
+          path="/customer/store/:storeId/reserve"
+          element={
+            <RequireCustomerAuth>
+              <StoreReserve />
+            </RequireCustomerAuth>
+          }
+        />
+
+        {/* 404 페이지 */}
         <Route path="*" element={<Landing />} />
       </Routes>
     </Router>

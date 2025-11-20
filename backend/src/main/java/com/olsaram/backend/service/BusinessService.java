@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 public class BusinessService {
 
     private final BusinessRepository businessRepository;
-
     private final BusinessOwnerRepository businessOwnerRepository;
 
-    public BusinessService(BusinessRepository businessRepository, BusinessOwnerRepository businessOwnerRepository) {
+    public BusinessService(BusinessRepository businessRepository,
+                           BusinessOwnerRepository businessOwnerRepository) {
         this.businessRepository = businessRepository;
         this.businessOwnerRepository = businessOwnerRepository;
     }
@@ -38,8 +38,24 @@ public class BusinessService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * ⭐ 단일 가게 조회 (404 방지)
+     * 존재하지 않으면 null 반환
+     */
+    public BusinessResponse getBusinessById(Long businessId) {
+        if (businessId == null) return null;
+
+        return businessRepository.findById(businessId)
+                .map(BusinessResponse::from)
+                .orElse(null);
+    }
+
+    /**
+     * 가게 등록
+     */
     @Transactional
     public BusinessResponse registerBusiness(BusinessRequestDto request) {
+
         if (request.getOwnerId() == null) {
             throw new IllegalArgumentException("owner_id를 입력해주세요.");
         }
@@ -47,7 +63,7 @@ public class BusinessService {
         BusinessOwner owner = businessOwnerRepository.findById(request.getOwnerId())
                 .orElseThrow(() -> new IllegalArgumentException("등록된 사업자를 찾을 수 없습니다."));
 
-        // 필수 필드 기본값 처리
+        // 기본값 처리
         String category = (request.getCategory() == null || request.getCategory().trim().isEmpty())
                 ? "기타" : request.getCategory();
         String address = (request.getAddress() == null || request.getAddress().trim().isEmpty())

@@ -35,8 +35,14 @@ public class Community {
     @Column(length = 50)
     private String category;
 
+    /** 🏷️ 태그 (쉼표로 구분된 문자열) */
+    private String tags;
+
     /** 🔢 조회수 */
     private int views = 0;
+
+    /** ❤️ 좋아요 수 */
+    private int likes = 0;
 
     /** 🗑️ 삭제 여부 */
     private boolean deleted = false;

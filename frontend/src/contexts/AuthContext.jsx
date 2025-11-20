@@ -1,87 +1,93 @@
-import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import authAPI from '../services/api';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
+import authAPI from "../services/api";
 
 const AuthContext = createContext(null);
 
-const extractUser = (response) => {
-  if (!response) {
-    return null;
-  }
+// 🔥 user 데이터 정규화
+const normalizeUser = (raw) => {
+  if (!raw) return null;
 
-  if (response.user) {
-    return response.user;
-  }
-
-  if (response.data) {
-    if (response.data.user) {
-      return response.data.user;
-    }
-
-    return response.data;
-  }
-
-  return response;
+  return {
+    token: raw.token ?? null,
+    ownerId: raw.ownerId ?? null,
+    customerId: raw.customerId ?? null,
+    name: raw.name ?? null,
+    email: raw.email ?? null,
+    role: raw.role ?? null,
+    _raw: raw,
+  };
 };
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => authAPI.getCurrentUser());
-  const [status, setStatus] = useState(() => {
-    const hasSession = authAPI.isAuthenticated();
-    const storedUser = authAPI.getCurrentUser();
-    if (hasSession && storedUser) {
-      return 'authenticated';
-    }
-
-    return 'idle';
+  const [user, setUser] = useState(() => {
+    const stored = authAPI.getCurrentUser();
+    return stored ? normalizeUser(stored) : null;
   });
+
+  const [status, setStatus] = useState(() => {
+    const hasToken = authAPI.isAuthenticated();
+    return hasToken ? "authenticated" : "idle";
+  });
+
   const [error, setError] = useState(null);
 
-  const login = useCallback(
-    async (credentials, userType = 'owner') => {
-      try {
-        setStatus('loading');
-        setError(null);
+  // -------------------------------------------------
+  // 🔑 로그인
+  // -------------------------------------------------
+  const login = useCallback(async (credentials, userType = "owner") => {
+    try {
+      setStatus("loading");
+      setError(null);
 
-        const response = await authAPI.login(credentials, userType);
-        const nextUser = extractUser(response) ?? authAPI.getCurrentUser();
+      const response = await authAPI.login(credentials, userType);
 
-        setUser(nextUser ?? null);
-        setStatus('authenticated');
+      // 로그인 성공 후 user 는 localStorage에 이미 저장됨
+      const stored = authAPI.getCurrentUser();
+      const normalized = normalizeUser(stored);
 
-        return nextUser;
-      } catch (err) {
-        console.error('로그인 실패:', err);
-        setError(err);
-        setStatus('idle');
-        throw err;
-      }
-    },
-    [setStatus, setError, setUser]
-  );
+      setUser(normalized);
+      setStatus("authenticated");
 
+      return normalized;
+    } catch (err) {
+      console.error("로그인 실패:", err);
+      setError(err);
+      setStatus("idle");
+      throw err;
+    }
+  }, []);
+
+  // -------------------------------------------------
+  // 🔄 새로고침 시 자동 로그인 유지
+  // -------------------------------------------------
   useEffect(() => {
-    if (status === 'authenticated' && user) {
-      return;
+    const stored = authAPI.getCurrentUser();
+    if (stored) {
+      setUser(normalizeUser(stored));
+      setStatus("authenticated");
     }
+  }, []);
 
-    const hasToken = authAPI.isAuthenticated();
-    const storedUser = authAPI.getCurrentUser();
-
-    if (hasToken && storedUser) {
-      setUser(storedUser);
-      setStatus('authenticated');
-    } else if (!hasToken && status !== 'idle') {
-      setStatus('idle');
-    }
-  }, [status, user, setUser, setStatus]);
-
+  // -------------------------------------------------
+  // 🚪 로그아웃
+  // -------------------------------------------------
   const logout = useCallback(() => {
     authAPI.logout();
     setUser(null);
-    setStatus('idle');
+    setStatus("idle");
     setError(null);
-  }, [setUser, setStatus, setError]);
+  }, []);
 
+  // -------------------------------------------------
+  // Context Value
+  // -------------------------------------------------
   const value = useMemo(
     () => ({
       user,
@@ -98,10 +104,8 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-
   if (!context) {
-    throw new Error('useAuth는 AuthProvider 내부에서만 사용할 수 있습니다.');
+    throw new Error("useAuth는 AuthProvider 내부에서만 사용 가능합니다.");
   }
-
   return context;
 }

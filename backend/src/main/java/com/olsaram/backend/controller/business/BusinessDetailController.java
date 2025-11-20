@@ -14,8 +14,11 @@ public class BusinessDetailController {
 
     private final BusinessDetailService businessDetailService;
 
-    // ✅ RESTful 버전 추천
-    @GetMapping("/{name}")
+    /**
+     * 🔥 가게 이름 기반 상세 조회
+     * ID 조회(GET /api/business/{id})와 충돌 방지하기 위해 name prefix 추가
+     */
+    @GetMapping("/name/{name}")
     public ResponseEntity<BusinessDetailResponse> getBusinessDetail(@PathVariable String name) {
         BusinessDetailResponse response = businessDetailService.getBusinessDetail(name);
         return ResponseEntity.ok(response);

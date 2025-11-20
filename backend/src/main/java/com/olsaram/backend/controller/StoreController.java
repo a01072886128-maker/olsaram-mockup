@@ -63,4 +63,42 @@ public class StoreController {
             return ResponseEntity.status(500).body(error);
         }
     }
+    /**
+     * 가게 메뉴 조회
+     * GET /api/stores/{storeId}/menus
+     */
+    @GetMapping("/{storeId}/menus")
+    public ResponseEntity<?> getStoreMenus(@PathVariable Long storeId) {
+        try {
+            return ResponseEntity.ok(storeService.getStoreMenus(storeId));
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(404).body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "메뉴 조회 중 오류: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    /**
+     * 가게 리뷰 조회
+     * GET /api/stores/{storeId}/reviews
+     */
+    @GetMapping("/{storeId}/reviews")
+    public ResponseEntity<?> getStoreReviews(@PathVariable Long storeId) {
+        try {
+            return ResponseEntity.ok(storeService.getStoreReviews(storeId));
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(404).body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "리뷰 조회 중 오류: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
 }

@@ -1,9 +1,9 @@
-const API_BASE_URL = '/api/stores';
+const API_BASE_URL = "/api/stores";
 
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = data?.message || '요청 처리 중 오류가 발생했습니다.';
+    const message = data?.message || "요청 처리 중 오류가 발생했습니다.";
     throw new Error(message);
   }
   return data;
@@ -23,12 +23,24 @@ export const storeAPI = {
     return handleResponse(response);
   },
 
-  // 예약 생성
+  // ⭐ 기존 일반 예약 API
   async createReservation(reservationData) {
-    const response = await fetch('/api/reservations', {
-      method: 'POST',
+    const response = await fetch("/api/reservations", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reservationData),
+    });
+    return handleResponse(response);
+  },
+
+  // ⭐⭐ 추가된 모의 결제 포함 예약 API
+  async fullPayReservation(reservationData) {
+    const response = await fetch("/api/reservations/full-pay", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(reservationData),
     });
@@ -47,3 +59,5 @@ export const storeAPI = {
     return handleResponse(response);
   },
 };
+
+export default storeAPI;

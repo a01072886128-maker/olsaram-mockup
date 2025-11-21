@@ -1,7 +1,13 @@
 // ------------------------------------------
 // API 기본 설정
 // ------------------------------------------
-const API_BASE_URL = "http://localhost:8080";
+const rawEnvApiBase =
+  typeof import.meta !== "undefined"
+    ? import.meta.env?.VITE_API_BASE_URL?.trim()
+    : "";
+const API_BASE_URL = rawEnvApiBase
+  ? rawEnvApiBase.replace(/\/+$/, "")
+  : "";
 
 // LocalStorage에서 토큰 가져오기
 const getToken = () => {
@@ -91,13 +97,13 @@ export const authAPI = {
   // 로그인
   login: async (credentials, userType = "owner") => {
     try {
-      // ❗❗ URL 오류 바로잡음 — 반드시 /api 포함해야 함
+      // ⚙️ 환경에 따라 다른 베이스 URL을 쓰기 때문에 경로만 정의
       const endpoint =
         userType === "owner"
-          ? `${API_BASE_URL}/api/business-owner/auth/login`
-          : `${API_BASE_URL}/api/customer/auth/login`;
+          ? `/api/business-owner/auth/login`
+          : `/api/customer/auth/login`;
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

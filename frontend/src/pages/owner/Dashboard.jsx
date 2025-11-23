@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Shield,
   LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -125,12 +124,6 @@ const Dashboard = () => {
                 className="text-text-secondary hover:text-text-primary"
               >
                 예약 관리
-              </Link>
-              <Link
-                to="/owner/fraud-detection"
-                className="text-text-secondary hover:text-text-primary"
-              >
-                노쇼 탐지
               </Link>
               <Link
                 to="/owner/menu-ocr"
@@ -305,12 +298,6 @@ const Dashboard = () => {
                     </button>
                   </Link>
 
-                  <Link to="/owner/fraud-detection">
-                    <button className="w-full border-2 border-primary-green text-primary-green hover:bg-primary-green hover:text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
-                      <Shield className="mr-2" size={20} />
-                      사기 패턴 확인
-                    </button>
-                  </Link>
                 </div>
               </div>
             </Card>

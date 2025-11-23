@@ -8,6 +8,7 @@ import com.olsaram.backend.domain.reservation.ReservationStatus;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
 import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;
 import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
+import com.olsaram.backend.dto.reservation.ReservationWithRiskResponse;
 import com.olsaram.backend.repository.BusinessRepository;
 import com.olsaram.backend.repository.CustomerRepository;
 import com.olsaram.backend.repository.reservation.ReservationRepository;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,6 +29,7 @@ public class ReservationService {
     private final BusinessRepository businessRepository;
     private final CustomerRepository customerRepository;
     private final PaymentService paymentService;
+    private final RiskCalculationService riskCalculationService;
 
     // -------------------------
     // CREATE
@@ -199,4 +203,96 @@ public Reservation createWithPayment(ReservationFullPayRequest req) {
     return savedReservation;
 }
 
+    // -------------------------
+    // ⭐ 위험도 포함 예약 조회 (사장님용)
+    // -------------------------
+    public List<ReservationWithRiskResponse> getReservationsWithRisk(Long ownerId) {
+
+        List<Business> businesses = businessRepository.findByOwner_OwnerId(ownerId);
+        if (businesses.isEmpty()) return Collections.emptyList();
+
+        List<Long> businessIds = businesses.stream()
+                .map(Business::getBusinessId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (businessIds.isEmpty()) return Collections.emptyList();
+
+        List<Reservation> reservations = reservationRepository.findByBusinessIdIn(businessIds);
+
+        Map<Long, Business> businessMap = businesses.stream()
+                .collect(Collectors.toMap(
+                        Business::getBusinessId,
+                        b -> b,
+                        (a, b) -> a
+                ));
+
+        // 고객 정보 조회 (전체 Customer 객체)
+        Set<Long> memberIds = reservations.stream()
+                .map(Reservation::getMemberId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, Customer> customerMap = customerRepository
+                .findAllById(memberIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        Customer::getCustomerId,
+                        c -> c,
+                        (a, b) -> a
+                ));
+
+        return reservations.stream()
+                .map(reservation -> {
+                    Customer customer = customerMap.get(reservation.getMemberId());
+                    Business business = businessMap.get(reservation.getBusinessId());
+
+                    // 위험도 계산
+                    int riskScore = riskCalculationService.calculateRiskScore(customer, reservation);
+                    String riskLevel = riskCalculationService.getRiskLevel(riskScore);
+                    List<String> patterns = riskCalculationService.analyzeSuspiciousPatterns(customer, reservation);
+                    List<String> actions = riskCalculationService.getAutoActions(riskLevel, reservation);
+
+                    // 고객 이력 정보 생성
+                    ReservationWithRiskResponse.CustomerRiskData customerData = null;
+                    if (customer != null) {
+                        int accountAgeDays = customer.getCreatedAt() != null
+                                ? (int) ChronoUnit.DAYS.between(customer.getCreatedAt().toLocalDate(), LocalDateTime.now().toLocalDate())
+                                : 365;
+
+                        customerData = ReservationWithRiskResponse.CustomerRiskData.builder()
+                                .customerId(customer.getCustomerId())
+                                .name(customer.getName())
+                                .phone(customer.getPhone())
+                                .noShowCount(customer.getNoShowCount() != null ? customer.getNoShowCount() : 0)
+                                .reservationCount(customer.getReservationCount() != null ? customer.getReservationCount() : 0)
+                                .lastMinuteCancels(0) // 추후 구현
+                                .accountAgeDays(accountAgeDays)
+                                .trustScore(customer.getTrustScore() != null ? customer.getTrustScore() : 100)
+                                .customerGrade(customer.getCustomerGrade())
+                                .build();
+                    }
+
+                    return ReservationWithRiskResponse.builder()
+                            .id(reservation.getId())
+                            .businessId(reservation.getBusinessId())
+                            .businessName(business != null ? business.getBusinessName() : null)
+                            .businessAddress(business != null ? business.getAddress() : null)
+                            .memberId(reservation.getMemberId())
+                            .customerName(customer != null ? customer.getName() : null)
+                            .customerPhone(customer != null ? customer.getPhone() : null)
+                            .reservationTime(reservation.getReservationTime())
+                            .people(reservation.getPeople())
+                            .status(reservation.getStatus() != null ? reservation.getStatus().name() : null)
+                            .paymentStatus(reservation.getPaymentStatus() != null ? reservation.getPaymentStatus().name() : null)
+                            .customerData(customerData)
+                            .riskScore(riskScore)
+                            .riskLevel(riskLevel)
+                            .suspiciousPatterns(patterns)
+                            .autoActions(actions)
+                            .build();
+                })
+                .sorted(Comparator.comparing(ReservationWithRiskResponse::getRiskScore)) // 위험도 순 정렬
+                .toList();
+    }
 }

@@ -6,7 +6,8 @@ import com.olsaram.backend.domain.reservation.Reservation;
 import com.olsaram.backend.domain.reservation.Reward;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
 import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
-import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;  // ⭐ 추가
+import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;
+import com.olsaram.backend.dto.reservation.ReservationWithRiskResponse;
 import com.olsaram.backend.repository.BusinessRepository;
 import com.olsaram.backend.service.reservation.PaymentService;
 import com.olsaram.backend.service.reservation.ReservationService;
@@ -87,6 +88,12 @@ public class ReservationController {
     @GetMapping("/owners/{ownerId}/reservations")
     public List<OwnerReservationResponse> getReservationsByOwnerId(@PathVariable Long ownerId) {
         return reservationService.getReservationsByOwnerId(ownerId);
+    }
+
+    // ⭐ 사장님 예약 조회 (노쇼 위험도 포함)
+    @GetMapping("/owners/{ownerId}/reservations/with-risk")
+    public List<ReservationWithRiskResponse> getReservationsWithRisk(@PathVariable Long ownerId) {
+        return reservationService.getReservationsWithRisk(ownerId);
     }
 
     // 💳 결제 (Payment)

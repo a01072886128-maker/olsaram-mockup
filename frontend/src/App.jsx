@@ -21,7 +21,6 @@ import Register from "./pages/auth/Register";
 
 // 사장님 페이지
 import OwnerDashboard from "./pages/owner/Dashboard";
-import FraudDetection from "./pages/owner/FraudDetection";
 import Reservations from "./pages/owner/Reservations";
 import MenuOCR from "./pages/owner/MenuOCR";
 import Community from "./pages/owner/Community";
@@ -97,14 +96,6 @@ function App() {
           element={
             <RequireOwnerAuth>
               <OwnerDashboard />
-            </RequireOwnerAuth>
-          }
-        />
-        <Route
-          path="/owner/fraud-detection"
-          element={
-            <RequireOwnerAuth>
-              <FraudDetection />
             </RequireOwnerAuth>
           }
         />

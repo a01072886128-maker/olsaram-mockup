@@ -80,13 +80,6 @@ function OwnerMyPage() {
             </Link>
 
             <Link
-              to="/owner/fraud-detection"
-              className="text-slate-700 text-base hover:text-green-600"
-            >
-              AI 사기탐지
-            </Link>
-
-            <Link
               to="/owner/reservations"
               className="text-slate-700 text-base hover:text-green-600"
             >

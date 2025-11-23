@@ -24,14 +24,14 @@ const buildHeaders = () => {
 };
 
 export const reservationAPI = {
+  // 사장님 예약 조회 (기본)
   async getOwnerReservations(ownerId) {
     if (!ownerId) {
       throw new Error("ownerId가 필요합니다.");
     }
 
-    // 🔥 백엔드 엔드포인트 맞게 수정
     const response = await fetch(
-      `${API_BASE_URL}/reservations/owner/${ownerId}`,
+      `${API_BASE_URL}/owners/${ownerId}/reservations`,
       {
         headers: buildHeaders(),
       }
@@ -39,18 +39,57 @@ export const reservationAPI = {
     return handleResponse(response);
   },
 
-  async getOwnerReservations(ownerId) {
+  // ⭐ 사장님 예약 조회 (노쇼 위험도 포함)
+  async getOwnerReservationsWithRisk(ownerId) {
     if (!ownerId) {
       throw new Error("ownerId가 필요합니다.");
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/owners/${ownerId}/reservations`, // ✅ 백엔드 실제 URL
+      `${API_BASE_URL}/owners/${ownerId}/reservations/with-risk`,
       {
         headers: buildHeaders(),
       }
     );
     return handleResponse(response);
+  },
+
+  // 예약 상태 업데이트
+  async updateReservationStatus(reservationId, updates) {
+    if (!reservationId) {
+      throw new Error("reservationId가 필요합니다.");
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/reservations/${reservationId}/status`,
+      {
+        method: "PATCH",
+        headers: buildHeaders(),
+        body: JSON.stringify(updates),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  // 예약 생성 (결제 포함)
+  async createReservationWithPayment(reservationData) {
+    const response = await fetch(
+      `${API_BASE_URL}/reservations/full-pay`,
+      {
+        method: "POST",
+        headers: buildHeaders(),
+        body: JSON.stringify(reservationData),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  // 예약 취소
+  async cancelReservation(reservationId) {
+    return this.updateReservationStatus(reservationId, {
+      status: "CANCELLED",
+      paymentStatus: "REFUND",
+    });
   },
 };
 

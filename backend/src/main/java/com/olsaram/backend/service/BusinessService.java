@@ -51,6 +51,21 @@ public class BusinessService {
     }
 
     /**
+     * ⭐ 가게 소유자 변경 (테스트용)
+     */
+    @Transactional
+    public void transferBusinessOwner(Long businessId, Long newOwnerId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
+
+        BusinessOwner newOwner = businessOwnerRepository.findById(newOwnerId)
+                .orElseThrow(() -> new IllegalArgumentException("사업자를 찾을 수 없습니다."));
+
+        business.setOwner(newOwner);
+        businessRepository.save(business);
+    }
+
+    /**
      * 가게 등록
      */
     @Transactional

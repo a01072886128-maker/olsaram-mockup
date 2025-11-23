@@ -51,13 +51,17 @@ const apiRequest = async (endpoint, options = {}) => {
 const normalizeUser = (data, userType) => {
   if (!data) return null;
 
+  // 고객: customerId, 사장님: ownerId
+  const customerId = data.customerId ?? data.customer_id ?? null;
+  const ownerId = data.ownerId ?? data.owner_id ?? null;
+
   return {
     token: data.token ?? null,
-    customerId:
-      data.customerId ?? (userType === "customer" ? data.id : null) ?? null,
-    ownerId: data.ownerId ?? (userType === "owner" ? data.id : null) ?? null,
+    customerId: customerId,
+    ownerId: ownerId,
     name: data.name ?? data.username ?? null,
     email: data.email ?? null,
+    phone: data.phone ?? null,
     role: userType,
     _raw: data,
   };

@@ -54,6 +54,22 @@ public class BusinessController {
     }
 
     /**
+     * ⭐ 가게 소유자 변경 (테스트용)
+     */
+    @PatchMapping("/business/{id}/transfer")
+    public ResponseEntity<?> transferBusiness(
+            @PathVariable Long id,
+            @RequestParam Long newOwnerId
+    ) {
+        try {
+            businessService.transferBusinessOwner(id, newOwnerId);
+            return ResponseEntity.ok("가게 소유자가 변경되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
      * ⭐ 단일 가게 조회 (프론트에서 비즈니스 이름 표시용)
      */
     @GetMapping("/business/{id}")

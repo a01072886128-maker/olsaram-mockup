@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Calendar,
   AlertTriangle,
@@ -8,18 +8,17 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import StatCard from "../../components/StatCard";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
+import Navbar from "../../components/Navbar";
 import { useAuth } from "../../contexts/AuthContext";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   // 🔥 로그인된 사장님 ID
   const ownerId = user?.ownerId;
@@ -27,34 +26,44 @@ const Dashboard = () => {
   const [todayReservations, setTodayReservations] = useState([]);
 
   // ------------------------------------------------------
-  // 🔥 오늘 예약 불러오기
+  // 🔥 오늘 예약 불러오기 + 30초마다 자동 새로고침
   // ------------------------------------------------------
   useEffect(() => {
     if (!ownerId) return;
 
-    axios
-      .get(`http://localhost:8080/api/owners/${ownerId}/reservations`)
-      .then((res) => {
-        // 오늘 날짜 기준 필터링
-        const today = new Date().toISOString().slice(0, 10);
+    const fetchReservations = () => {
+      axios
+        .get(`http://localhost:8080/api/owners/${ownerId}/reservations`)
+        .then((res) => {
+          // 오늘 날짜 기준 필터링
+          const today = new Date().toISOString().slice(0, 10);
 
-        const mapped = res.data
-          .filter((r) => r.reservationTime.startsWith(today))
-          .map((item) => ({
-            id: item.id,
-            customerName: item.customerName || "고객",
-            trustLevel: "단골",
-            stars: 3,
-            time: item.reservationTime.substring(11, 16),
-            partySize: item.people,
-            status: item.status === "CONFIRMED" ? "confirmed" : "pending",
-            menu: item.menu || "메뉴 정보 없음",
-            paymentStatus: item.paymentStatus,
-          }));
+          const mapped = res.data
+            .filter((r) => r.reservationTime.startsWith(today))
+            .map((item) => ({
+              id: item.id,
+              customerName: item.customerName || "고객",
+              trustLevel: "단골",
+              stars: 3,
+              time: item.reservationTime.substring(11, 16),
+              partySize: item.people,
+              status: item.status === "CONFIRMED" ? "confirmed" : "pending",
+              menu: item.menu || "메뉴 정보 없음",
+              paymentStatus: item.paymentStatus,
+            }));
 
-        setTodayReservations(mapped);
-      })
-      .catch((err) => console.error("예약 데이터를 불러오는 중 오류:", err));
+          setTodayReservations(mapped);
+        })
+        .catch((err) => console.error("예약 데이터를 불러오는 중 오류:", err));
+    };
+
+    // 초기 로드
+    fetchReservations();
+
+    // 30초마다 자동 새로고침
+    const interval = setInterval(fetchReservations, 30 * 1000);
+
+    return () => clearInterval(interval);
   }, [ownerId]);
 
   // ⭐ 신뢰등급 색상
@@ -96,65 +105,11 @@ const Dashboard = () => {
     },
   ];
 
-  const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
-  };
-
   // ------------------------------------------------------
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link to="/">
-              <h1 className="text-2xl font-bold text-text-primary">올사람</h1>
-            </Link>
-            <nav className="hidden md:flex gap-6">
-              <Link
-                to="/owner/dashboard"
-                className="text-text-primary font-medium"
-              >
-                대시보드
-              </Link>
-              <Link
-                to="/owner/reservations"
-                className="text-text-secondary hover:text-text-primary"
-              >
-                예약 관리
-              </Link>
-              <Link
-                to="/owner/menu-ocr"
-                className="text-text-secondary hover:text-text-primary"
-              >
-                메뉴 관리
-              </Link>
-              <Link
-                to="/owner/community"
-                className="text-text-secondary hover:text-text-primary"
-              >
-                커뮤니티
-              </Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/owner/register-business")}
-            >
-              가게 등록하기
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut size={16} className="mr-1" />
-              로그아웃
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar userType="owner" />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">

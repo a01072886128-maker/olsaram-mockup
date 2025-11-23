@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import storeAPI from "../../services/store";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function StoreDetail() {
   const { storeId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [store, setStore] = useState(null);
   const [menus, setMenus] = useState([]);
@@ -12,8 +14,7 @@ export default function StoreDetail() {
   const [loading, setLoading] = useState(true);
 
   // 🔥 로그인한 고객 정보
-  const user = JSON.parse(localStorage.getItem("user"));
-  const memberId = user?.customerId || user?.userId || null;
+  const memberId = user?.customerId;
 
   // 예약 입력 상태
   const [reservationTime, setReservationTime] = useState("");

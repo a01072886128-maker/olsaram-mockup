@@ -25,6 +25,7 @@ import Reservations from "./pages/owner/Reservations";
 import MenuOCR from "./pages/owner/MenuOCR";
 import Community from "./pages/owner/Community";
 import RegisterBusiness from "./pages/owner/RegisterBusiness";
+import MyBusinesses from "./pages/owner/MyBusinesses";
 import OwnerMyPage from "./pages/owner/MyPage.jsx";
 
 // 관리자 페이지
@@ -136,6 +137,14 @@ function App() {
           element={
             <RequireOwnerAuth>
               <OwnerMyPage />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/my-businesses"
+          element={
+            <RequireOwnerAuth>
+              <MyBusinesses />
             </RequireOwnerAuth>
           }
         />

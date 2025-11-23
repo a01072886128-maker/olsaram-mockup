@@ -49,24 +49,23 @@ const Navbar = ({ userType = null }) => {
               <>
                 <Link
                   to="/owner/dashboard"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  className={`px-3 py-2 rounded-lg transition-colors ${
                     isActive("/owner/dashboard")
                       ? "text-primary-green font-semibold"
                       : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
-                  <Home size={20} />
-                  <span>대시보드</span>
+                  대시보드
                 </Link>
                 <Link
-                  to="/owner/fraud-detection"
+                  to="/owner/my-businesses"
                   className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive("/owner/fraud-detection")
+                    isActive("/owner/my-businesses")
                       ? "text-primary-green font-semibold"
                       : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
-                  AI 사기탐지
+                  내 가게
                 </Link>
                 <Link
                   to="/owner/reservations"
@@ -76,7 +75,17 @@ const Navbar = ({ userType = null }) => {
                       : "text-text-secondary hover:text-primary-green"
                   }`}
                 >
-                  예약관리
+                  예약 관리
+                </Link>
+                <Link
+                  to="/owner/menu-ocr"
+                  className={`px-3 py-2 rounded-lg transition-colors ${
+                    isActive("/owner/menu-ocr")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
+                  }`}
+                >
+                  메뉴 관리
                 </Link>
                 <Link
                   to="/owner/community"
@@ -88,14 +97,11 @@ const Navbar = ({ userType = null }) => {
                 >
                   커뮤니티
                 </Link>
-
-                {/* 🔥 여기 마이페이지 추가 */}
                 <Link
-                  to="/owner/my-page"
-                  className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"
-                  onClick={() => setMobileMenuOpen(false)}
+                  to="/owner/register-business"
+                  className="px-4 py-2 bg-primary-green text-white font-semibold rounded-lg hover:bg-dark-green transition-colors"
                 >
-                  마이페이지
+                  가게 등록하기
                 </Link>
                 <button
                   onClick={handleLogout}

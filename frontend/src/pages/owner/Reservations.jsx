@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import {
@@ -12,9 +11,7 @@ import {
   Calendar,
   Clock,
   Users,
-  MessageSquare,
   MapPin,
-  LogOut,
   CheckCircle2,
   XCircle,
   Shield,
@@ -26,6 +23,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { reservationAPI } from "../../services/reservations";
 import { motion, AnimatePresence } from "framer-motion";
+import Navbar from "../../components/Navbar";
 
 /* -------------------------------------------------------------
    노쇼 위험도 계산 로직
@@ -519,7 +517,7 @@ const ReservationCard = ({
    메인 컴포넌트
 ------------------------------------------------------------- */
 function Reservations() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const ownerId = user?.ownerId;
 
   const [reservations, setReservations] = useState([]);
@@ -716,38 +714,7 @@ function Reservations() {
   /* ---------------- 렌더 ---------------- */
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-8 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-12">
-            <Link to="/" className="text-2xl font-bold">
-              올사람
-            </Link>
-            <nav className="hidden md:flex gap-10">
-              <Link to="/owner/dashboard">대시보드</Link>
-              <Link
-                to="/owner/reservations"
-                className="font-semibold border-b-2 border-blue-600 pb-[26px]"
-              >
-                예약 관리
-              </Link>
-              <Link to="/owner/menu-ocr">메뉴 관리</Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Button variant="ghost">
-              <MessageSquare className="w-5 h-5 mr-2" />
-              알림
-            </Button>
-            <Button variant="ghost">{user?.name || "내 매장"}</Button>
-            <Button variant="outline" onClick={logout}>
-              <LogOut className="w-5 h-5 mr-2" />
-              로그아웃
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar userType="owner" />
 
       {/* 메인 */}
       <main className="container mx-auto px-8 py-10">

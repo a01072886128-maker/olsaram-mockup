@@ -15,10 +15,10 @@ import {
   TabsContent,
 } from "../../components/ui/tabs";
 
-import { Star, MapPin, Store } from "lucide-react";
+import { Star, MapPin } from "lucide-react";
 import { useState } from "react";
 import Modal from "../../components/Modal";
-import { Link } from "react-router-dom";
+import Navbar from "../../components/Navbar";
 
 // ---------------- Mock 사업자 데이터 ----------------
 const ownerProfile = {
@@ -58,43 +58,7 @@ function OwnerMyPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ------------------------------ 상단 고정 Header ------------------------------ */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-8 h-20 flex items-center justify-between">
-          {/* 로고 */}
-          <Link
-            to="/owner/dashboard"
-            className="text-2xl font-bold text-green-700 cursor-pointer flex items-center gap-2"
-          >
-            <Store className="text-green-600" />
-            올사람 사장님
-          </Link>
-
-          {/* 메뉴 */}
-          <div className="flex gap-6">
-            <Link
-              to="/owner/dashboard"
-              className="text-slate-700 text-base hover:text-green-600"
-            >
-              대시보드
-            </Link>
-
-            <Link
-              to="/owner/reservations"
-              className="text-slate-700 text-base hover:text-green-600"
-            >
-              예약 관리
-            </Link>
-
-            <Link
-              to="/owner/my-page"
-              className="text-green-600 font-bold border-b-2 border-green-600 text-base"
-            >
-              마이페이지
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar userType="owner" />
 
       {/* ------------------------------ Main ------------------------------ */}
       <main className="container mx-auto px-6 py-8">

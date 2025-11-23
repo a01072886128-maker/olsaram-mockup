@@ -70,6 +70,45 @@ public class BusinessController {
     }
 
     /**
+     * 가게 정보 수정
+     */
+    @PutMapping("/business/{id}")
+    public ResponseEntity<?> updateBusiness(
+            @PathVariable Long id,
+            @RequestParam Long ownerId,
+            @Valid @RequestBody BusinessRequestDto requestDto
+    ) {
+        try {
+            log.info("가게 수정 요청 - businessId: {}, ownerId: {}", id, ownerId);
+            BusinessResponse response = businessService.updateBusiness(id, ownerId, requestDto);
+            log.info("가게 수정 성공 - businessId: {}", id);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("가게 수정 실패 - businessId: {}", id, e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * 가게 삭제
+     */
+    @DeleteMapping("/business/{id}")
+    public ResponseEntity<?> deleteBusiness(
+            @PathVariable Long id,
+            @RequestParam Long ownerId
+    ) {
+        try {
+            log.info("가게 삭제 요청 - businessId: {}, ownerId: {}", id, ownerId);
+            businessService.deleteBusiness(id, ownerId);
+            log.info("가게 삭제 성공 - businessId: {}", id);
+            return ResponseEntity.ok("가게가 삭제되었습니다.");
+        } catch (Exception e) {
+            log.error("가게 삭제 실패 - businessId: {}", id, e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
      * ⭐ 단일 가게 조회 (프론트에서 비즈니스 이름 표시용)
      */
     @GetMapping("/business/{id}")

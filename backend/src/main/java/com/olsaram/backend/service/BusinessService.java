@@ -66,6 +66,65 @@ public class BusinessService {
     }
 
     /**
+     * 가게 정보 수정
+     */
+    @Transactional
+    public BusinessResponse updateBusiness(Long businessId, Long ownerId, BusinessRequestDto request) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
+
+        // 소유자 확인
+        if (!business.getOwner().getOwnerId().equals(ownerId)) {
+            throw new IllegalArgumentException("해당 가게의 소유자가 아닙니다.");
+        }
+
+        // 필드 업데이트
+        if (request.getBusinessName() != null && !request.getBusinessName().trim().isEmpty()) {
+            business.setBusinessName(request.getBusinessName().trim());
+        }
+        if (request.getBusinessNumber() != null) {
+            business.setBusinessNumber(request.getBusinessNumber().trim());
+        }
+        if (request.getCategory() != null && !request.getCategory().trim().isEmpty()) {
+            business.setCategory(request.getCategory().trim());
+        }
+        if (request.getAddress() != null) {
+            business.setAddress(request.getAddress().trim());
+        }
+        if (request.getPhone() != null) {
+            business.setPhone(request.getPhone().trim());
+        }
+        if (request.getDescription() != null) {
+            business.setDescription(request.getDescription().trim());
+        }
+        if (request.getBusinessImageUrl() != null) {
+            business.setBusinessImageUrl(request.getBusinessImageUrl().trim());
+        }
+        if (request.getOpeningHours() != null) {
+            business.setOpeningHours(request.getOpeningHours().trim());
+        }
+
+        Business savedBusiness = businessRepository.save(business);
+        return BusinessResponse.from(savedBusiness);
+    }
+
+    /**
+     * 가게 삭제
+     */
+    @Transactional
+    public void deleteBusiness(Long businessId, Long ownerId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
+
+        // 소유자 확인
+        if (!business.getOwner().getOwnerId().equals(ownerId)) {
+            throw new IllegalArgumentException("해당 가게의 소유자가 아닙니다.");
+        }
+
+        businessRepository.delete(business);
+    }
+
+    /**
      * 가게 등록
      */
     @Transactional

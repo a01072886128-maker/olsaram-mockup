@@ -25,6 +25,7 @@ import Reservations from "./pages/owner/Reservations";
 import MenuOCR from "./pages/owner/MenuOCR";
 import Community from "./pages/owner/Community";
 import RegisterBusiness from "./pages/owner/RegisterBusiness";
+import EditBusiness from "./pages/owner/EditBusiness";
 import MyBusinesses from "./pages/owner/MyBusinesses";
 import OwnerMyPage from "./pages/owner/MyPage.jsx";
 
@@ -145,6 +146,14 @@ function App() {
           element={
             <RequireOwnerAuth>
               <MyBusinesses />
+            </RequireOwnerAuth>
+          }
+        />
+        <Route
+          path="/owner/edit-business/:businessId"
+          element={
+            <RequireOwnerAuth>
+              <EditBusiness />
             </RequireOwnerAuth>
           }
         />

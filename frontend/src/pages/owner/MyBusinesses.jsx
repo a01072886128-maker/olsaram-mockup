@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Store, MapPin, Phone, Clock, Plus } from "lucide-react";
+import { Store, MapPin, Phone, Clock, Plus, Trash2, Settings } from "lucide-react";
 import Button from "../../components/Button";
 import Card from "../../components/Card";
 import Navbar from "../../components/Navbar";
@@ -15,6 +15,25 @@ const MyBusinesses = () => {
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const handleDelete = async (businessId, businessName) => {
+    if (!window.confirm(`"${businessName}" 가게를 정말 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(businessId);
+      await businessAPI.deleteBusiness(businessId, ownerId);
+      setBusinesses((prev) => prev.filter((b) => b.businessId !== businessId));
+      alert("가게가 삭제되었습니다.");
+    } catch (err) {
+      console.error("가게 삭제 실패:", err);
+      alert(err.response?.data || "가게 삭제에 실패했습니다.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!ownerId) {
@@ -75,8 +94,18 @@ const MyBusinesses = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {businesses.map((business) => (
-              <Card key={business.businessId} className="hover:shadow-lg transition-shadow">
+              <Card key={business.businessId} className="hover:shadow-lg transition-shadow relative">
                 <div className="p-6">
+                  {/* 삭제 버튼 - 우상단 작은 휴지통 */}
+                  <button
+                    className="absolute top-3 right-3 p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    onClick={() => handleDelete(business.businessId, business.businessName)}
+                    disabled={deletingId === business.businessId}
+                    title="가게 삭제"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+
                   {/* 가게 이미지 */}
                   {business.businessImageUrl ? (
                     <img
@@ -137,7 +166,7 @@ const MyBusinesses = () => {
                   )}
 
                   {/* 액션 버튼 */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mb-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -155,6 +184,15 @@ const MyBusinesses = () => {
                       메뉴 관리
                     </Button>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full flex items-center justify-center"
+                    onClick={() => navigate(`/owner/edit-business/${business.businessId}`)}
+                  >
+                    <Settings size={14} className="mr-1" />
+                    정보 변경
+                  </Button>
                 </div>
               </Card>
             ))}

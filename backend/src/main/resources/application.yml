@@ -47,6 +47,15 @@ ncloud:
     api-key: ${NCLOUD_OCR_API_KEY}
     secret-key: ${NCLOUD_OCR_SECRET_KEY}
 
+naver:
+  map:
+    client-id: ${NAVER_MAP_CLIENT_ID:test}
+    client-secret: ${NAVER_MAP_CLIENT_SECRET:test}
+
+kakao:
+  api:
+    key: ${KAKAO_REST_API_KEY:4d8d4fab8995bb493fbf0dcdc3d4da5b}
+
 ---
 spring:
   config:
@@ -64,8 +73,3 @@ spring:
   sql:
     init:
       mode: never
-
-naver:
-  map:
-    client-id: ${NAVER_MAP_CLIENT_ID}
-    client-secret: ${NAVER_MAP_CLIENT_SECRET}

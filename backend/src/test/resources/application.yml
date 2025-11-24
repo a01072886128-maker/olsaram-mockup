@@ -1,0 +1,32 @@
+# 테스트 전용 설정 - H2 인메모리 DB 사용 (실제 DB 보호)
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  sql:
+    init:
+      mode: never
+
+# 테스트에서는 실제 외부 서비스 사용 안함
+openai:
+  api:
+    key: test-key
+
+ncloud:
+  ocr:
+    invoke-url: http://localhost
+    api-key-id: test
+    api-key: test
+    secret-key: test
+
+naver:
+  map:
+    client-id: test
+    client-secret: test

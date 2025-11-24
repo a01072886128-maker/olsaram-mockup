@@ -30,4 +30,10 @@ public interface MapBusinessRepository extends JpaRepository<Business, Long> {
             @Param("minLon") BigDecimal minLon,
             @Param("maxLon") BigDecimal maxLon
     );
+
+    // 이름과 주소로 중복 체크
+    boolean existsByBusinessNameAndAddress(String businessName, String address);
+
+    // 사업자등록번호로 중복 체크
+    boolean existsByBusinessNumber(String businessNumber);
 }

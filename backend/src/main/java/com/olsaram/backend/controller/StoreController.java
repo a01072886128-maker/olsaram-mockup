@@ -1,6 +1,7 @@
 package com.olsaram.backend.controller;
 
 import com.olsaram.backend.dto.store.NearbyStoreResponse;
+import com.olsaram.backend.service.KakaoLocalService;
 import com.olsaram.backend.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class StoreController {
 
     private final StoreService storeService;
+    private final KakaoLocalService kakaoLocalService;
 
     /**
      * 내 주변 맛집 검색
@@ -101,4 +103,47 @@ public class StoreController {
         }
     }
 
+    /**
+     * 카카오 API로 주변 음식점 검색 후 DB 저장
+     * POST /api/stores/fetch-kakao?lat={lat}&lng={lng}&radius={radius}
+     */
+    @PostMapping("/fetch-kakao")
+    public ResponseEntity<Map<String, Object>> fetchKakaoRestaurants(
+            @RequestParam double lat,
+            @RequestParam double lng,
+            @RequestParam(defaultValue = "3000") int radius) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            int savedCount = kakaoLocalService.fetchAndSaveNearbyRestaurants(lat, lng, radius);
+            response.put("success", true);
+            response.put("savedCount", savedCount);
+            response.put("message", savedCount + "개의 음식점이 저장되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "카카오 API 호출 실패: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    /**
+     * 중복 가게 데이터 삭제
+     * DELETE /api/stores/duplicates
+     */
+    @DeleteMapping("/duplicates")
+    public ResponseEntity<Map<String, Object>> removeDuplicates() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            int deletedCount = kakaoLocalService.removeDuplicateBusinesses();
+            response.put("success", true);
+            response.put("deletedCount", deletedCount);
+            response.put("message", deletedCount + "개의 중복 가게가 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "중복 삭제 실패: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 }

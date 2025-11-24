@@ -9,12 +9,24 @@ import {
   MapPin,
   Clock,
   Trash,
+  Search,
+  AlertTriangle,
+  Phone,
+  Filter,
 } from "lucide-react";
 
 import Navbar from "../../components/Navbar";
 import Card from "../../components/Card";
 import Modal from "../../components/Modal";
 import Toast from "../../components/Toast";
+import FraudReportModal from "../../components/FraudReportModal";
+import {
+  fraudReportAPI,
+  formatPhoneNumber,
+  getSeverityColor,
+  formatCurrency,
+  REPORT_TYPE_OPTIONS,
+} from "../../services/fraudReport";
 
 const Community = () => {
   const loginUser = JSON.parse(localStorage.getItem("user"));
@@ -37,6 +49,18 @@ const Community = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
+
+  // 사기번호 관련 상태
+  const [isFraudReportModalOpen, setIsFraudReportModalOpen] = useState(false);
+  const [fraudReports, setFraudReports] = useState([]);
+  const [phoneSearchQuery, setPhoneSearchQuery] = useState("");
+  const [phoneSearchResult, setPhoneSearchResult] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [fraudSortBy, setFraudSortBy] = useState("latest");
+  const [fraudFilterType, setFraudFilterType] = useState("ALL");
+  const [fraudFilterDays, setFraudFilterDays] = useState(null);
+  const [selectedFraudReport, setSelectedFraudReport] = useState(null);
+  const [isFraudDetailModalOpen, setIsFraudDetailModalOpen] = useState(false);
 
   const [toast, setToast] = useState({
     show: false,
@@ -114,9 +138,50 @@ const Community = () => {
     }
   };
 
+  /** 사기번호 신고 목록 로드 */
+  const loadFraudReports = async () => {
+    try {
+      const params = {
+        sortBy: fraudSortBy,
+        filterType: fraudFilterType !== "ALL" ? fraudFilterType : null,
+        days: fraudFilterDays,
+      };
+      const data = await fraudReportAPI.getReports(params);
+      setFraudReports(data);
+    } catch (err) {
+      console.error("사기번호 목록 로드 실패:", err);
+    }
+  };
+
   useEffect(() => {
     loadPosts();
   }, []);
+
+  useEffect(() => {
+    if (viewTab === "FRAUD") {
+      loadFraudReports();
+    }
+  }, [viewTab, fraudSortBy, fraudFilterType, fraudFilterDays]);
+
+  /** 전화번호 검색 */
+  const handlePhoneSearch = async () => {
+    if (!phoneSearchQuery.trim()) return;
+
+    try {
+      setIsSearching(true);
+      const result = await fraudReportAPI.searchByPhone(phoneSearchQuery);
+      setPhoneSearchResult(result);
+    } catch (err) {
+      console.error("전화번호 검색 실패:", err);
+      setToast({
+        show: true,
+        message: "전화번호 검색에 실패했습니다.",
+        type: "error",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   /** 댓글 로딩 */
   const loadComments = async (postId) => {
@@ -214,7 +279,7 @@ const Community = () => {
     const body = {
       title: writeTitle,
       content: writeContent,
-      category: convertCategoryToEnum(writeCategory), // 🔥 핵심
+      category: convertCategoryToEnum(writeCategory),
       tags: writeTags,
       memberId: myOwnerId,
     };
@@ -272,6 +337,24 @@ const Community = () => {
     return list.sort((a, b) => b.id - a.id);
   })();
 
+  /** 위험도 라벨 */
+  const getSeverityLabel = (level) => {
+    switch (level) {
+      case "URGENT":
+        return "긴급";
+      case "WARNING":
+        return "주의";
+      default:
+        return "검토중";
+    }
+  };
+
+  /** 신고 유형 라벨 */
+  const getReportTypeLabel = (type) => {
+    const found = REPORT_TYPE_OPTIONS.find((o) => o.value === type);
+    return found ? `${found.icon} ${found.label}` : type;
+  };
+
   return (
     <div className="min-h-screen bg-bg-main">
       <Navbar userType="owner" />
@@ -287,7 +370,7 @@ const Community = () => {
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-6">
           <button
             onClick={() => setViewTab("ALL")}
             className={`px-4 py-2 rounded-lg font-semibold ${
@@ -320,150 +403,396 @@ const Community = () => {
           >
             인기 글 🔥
           </button>
-        </div>
 
-        {/* 글쓰기 버튼 */}
-        <div className="flex justify-end mb-6">
           <button
-            onClick={() => {
-              setIsEditMode(false);
-              setWriteTitle("");
-              setWriteContent("");
-              setWriteTags("");
-              setWriteCategory("사기 의심 공유");
-              setIsWriteModalOpen(true);
-            }}
-            className="px-4 py-2 bg-primary-purple text-white font-semibold rounded-lg flex items-center gap-2"
+            onClick={() => setViewTab("FRAUD")}
+            className={`px-4 py-2 rounded-lg font-semibold ${
+              viewTab === "FRAUD"
+                ? "bg-red-600 text-white"
+                : "bg-red-100 text-red-600"
+            }`}
           >
-            <Plus size={18} /> 글 작성
+            🚨 사기번호 공유
           </button>
         </div>
 
-        {/* 게시글 목록 */}
-        <div className="space-y-4">
-          {finalPosts.map((post) => {
-            const borderColor =
-              post.rawCategory === "OWNER_POST"
-                ? "border-red-400"
-                : post.rawCategory === "TIP"
-                ? "border-green-400"
-                : post.rawCategory === "QUESTION"
-                ? "border-yellow-400"
-                : "border-gray-200";
+        {/* 글쓰기 / 신고하기 버튼 */}
+        <div className="flex justify-end gap-3 mb-6">
+          {viewTab !== "FRAUD" && (
+            <button
+              onClick={() => {
+                setIsEditMode(false);
+                setWriteTitle("");
+                setWriteContent("");
+                setWriteTags("");
+                setWriteCategory("사기 의심 공유");
+                setIsWriteModalOpen(true);
+              }}
+              className="px-4 py-2 bg-primary-purple text-white font-semibold rounded-lg flex items-center gap-2"
+            >
+              <Plus size={18} /> 글 작성
+            </button>
+          )}
 
-            return (
-              <Card
-                key={post.id}
-                className={`hover:shadow-lg transition cursor-pointer relative border-2 ${borderColor}`}
-                onClick={() => handleViewDetail(post)}
-              >
-                {post.isMine && (
-                  <div className="absolute top-3 right-3 flex gap-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditMode(true);
-                        setEditPostId(post.id);
-                        setWriteTitle(post.title);
-                        setWriteContent(post.content);
-                        setWriteCategory(post.rawCategory);
-                        setWriteTags(post.tags.join(","));
-                        setIsWriteModalOpen(true);
-                      }}
-                      className="text-blue-500"
-                    >
-                      ✏
-                    </button>
+          <button
+            onClick={() => setIsFraudReportModalOpen(true)}
+            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg flex items-center gap-2"
+          >
+            <AlertTriangle size={18} /> 노쇼/사기 번호 신고
+          </button>
+        </div>
 
+        {/* 사기번호 탭 콘텐츠 */}
+        {viewTab === "FRAUD" ? (
+          <div className="space-y-6">
+            {/* 전화번호 검색 */}
+            <Card className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Search size={20} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={phoneSearchQuery}
+                      onChange={(e) =>
+                        setPhoneSearchQuery(formatPhoneNumber(e.target.value))
+                      }
+                      placeholder="전화번호 조회하기: 010-1234-5678"
+                      className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-red-500"
+                      maxLength={13}
+                    />
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deletePost(post.id);
-                      }}
-                      className="text-red-500"
+                      onClick={handlePhoneSearch}
+                      disabled={isSearching}
+                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                     >
-                      <Trash size={20} />
+                      {isSearching ? "검색 중..." : "조회"}
                     </button>
                   </div>
-                )}
+                </div>
+              </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="text-4xl">{post.icon}</div>
-
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold">{post.title}</h3>
-                      {post.isMine && (
-                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">
-                          내 글
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-4 text-gray-600 text-sm">
-                      <span>{post.author}</span>
-                      <span className="flex items-center">
-                        <MapPin size={14} className="mr-1" />
-                        {post.location}
-                      </span>
-                      <span className="flex items-center">
-                        <Clock size={14} className="mr-1" />
-                        {post.createdAt}
-                      </span>
-                    </div>
-
-                    <p className="line-clamp-2 mt-2">{post.content}</p>
-
-                    {post.tags && post.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {post.tags.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 bg-gray-100 rounded-full text-sm text-primary-purple"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
+              {/* 검색 결과 */}
+              {phoneSearchResult && (
+                <div
+                  className={`mt-4 p-4 rounded-lg ${
+                    getSeverityColor(phoneSearchResult.severity_level).bg
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {phoneSearchResult.is_reported ? (
+                      <AlertTriangle
+                        className={
+                          getSeverityColor(phoneSearchResult.severity_level)
+                            .text
+                        }
+                        size={24}
+                      />
+                    ) : (
+                      <span className="text-2xl">✅</span>
                     )}
+                    <span
+                      className={`font-bold ${
+                        getSeverityColor(phoneSearchResult.severity_level).text
+                      }`}
+                    >
+                      {phoneSearchResult.severity_label}
+                    </span>
+                  </div>
 
-                    <div className="flex items-center gap-5 mt-3 text-gray-600">
+                  {phoneSearchResult.is_reported && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 text-sm">
+                      <div>
+                        <span className="text-gray-500">신고 건수:</span>
+                        <span className="ml-2 font-bold">
+                          {phoneSearchResult.report_count}건
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">총 피해액:</span>
+                        <span className="ml-2 font-bold">
+                          {formatCurrency(phoneSearchResult.total_damage)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">주요 유형:</span>
+                        <span className="ml-2 font-bold">
+                          {getReportTypeLabel(phoneSearchResult.main_report_type)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">최근 지역:</span>
+                        <span className="ml-2 font-bold">
+                          {phoneSearchResult.last_region || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+
+            {/* 필터 */}
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <Filter size={18} className="text-gray-500" />
+                <span className="text-gray-600 font-medium">정렬:</span>
+                <select
+                  value={fraudSortBy}
+                  onChange={(e) => setFraudSortBy(e.target.value)}
+                  className="p-2 border rounded-lg"
+                >
+                  <option value="latest">최신순</option>
+                  <option value="count">신고 많은 순</option>
+                  <option value="damage">피해액 큰 순</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 font-medium">유형:</span>
+                <select
+                  value={fraudFilterType}
+                  onChange={(e) => setFraudFilterType(e.target.value)}
+                  className="p-2 border rounded-lg"
+                >
+                  <option value="ALL">전체</option>
+                  <option value="NO_SHOW">노쇼</option>
+                  <option value="RESERVATION_FRAUD">예약 사기</option>
+                  <option value="MARKETING_SPAM">마케팅 스팸</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 font-medium">기간:</span>
+                <select
+                  value={fraudFilterDays || ""}
+                  onChange={(e) =>
+                    setFraudFilterDays(
+                      e.target.value ? parseInt(e.target.value) : null
+                    )
+                  }
+                  className="p-2 border rounded-lg"
+                >
+                  <option value="">전체</option>
+                  <option value="1">오늘</option>
+                  <option value="7">1주일</option>
+                  <option value="30">1개월</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 신고 목록 */}
+            <div className="space-y-4">
+              {fraudReports.length === 0 ? (
+                <Card>
+                  <div className="text-center py-10 text-gray-400">
+                    <AlertTriangle
+                      size={40}
+                      className="mx-auto mb-3 opacity-50"
+                    />
+                    신고된 사기번호가 없습니다
+                  </div>
+                </Card>
+              ) : (
+                fraudReports.map((report) => {
+                  const severityColor = getSeverityColor(report.severity_level);
+                  return (
+                    <Card
+                      key={report.report_id}
+                      className={`hover:shadow-lg transition cursor-pointer border-2 ${severityColor.border}`}
+                      onClick={() => {
+                        setSelectedFraudReport(report);
+                        setIsFraudDetailModalOpen(true);
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* 위험도 뱃지 */}
+                        <div
+                          className={`px-3 py-1 rounded-full text-sm font-bold ${severityColor.bg} ${severityColor.text}`}
+                        >
+                          {report.severity_level === "URGENT" && "🔴 "}
+                          {report.severity_level === "WARNING" && "🟠 "}
+                          {report.severity_level === "SAFE" && "🟢 "}
+                          {getSeverityLabel(report.severity_level)}
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-lg font-bold">
+                              {getReportTypeLabel(report.report_type)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-gray-600 mb-2">
+                            <span className="flex items-center gap-1">
+                              <Phone size={14} />
+                              {report.phone_number}
+                            </span>
+                            <span>신고 건수: {report.report_count}건</span>
+                            <span>
+                              총 피해액: {formatCurrency(report.total_damage)}
+                            </span>
+                          </div>
+
+                          <p className="text-gray-600 line-clamp-2">
+                            {report.description}
+                          </p>
+
+                          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <MapPin size={14} />
+                              {report.region || "지역 미지정"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock size={14} />
+                              {new Date(report.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsFraudReportModalOpen(true);
+                          }}
+                          className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200"
+                        >
+                          나도 피해입니다
+                        </button>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ) : (
+          /* 기존 게시글 목록 */
+          <div className="space-y-4">
+            {finalPosts.map((post) => {
+              const borderColor =
+                post.rawCategory === "OWNER_POST"
+                  ? "border-red-400"
+                  : post.rawCategory === "TIP"
+                  ? "border-green-400"
+                  : post.rawCategory === "QUESTION"
+                  ? "border-yellow-400"
+                  : "border-gray-200";
+
+              return (
+                <Card
+                  key={post.id}
+                  className={`hover:shadow-lg transition cursor-pointer relative border-2 ${borderColor}`}
+                  onClick={() => handleViewDetail(post)}
+                >
+                  {post.isMine && (
+                    <div className="absolute top-3 right-3 flex gap-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleLike(post);
+                          setIsEditMode(true);
+                          setEditPostId(post.id);
+                          setWriteTitle(post.title);
+                          setWriteContent(post.content);
+                          setWriteCategory(post.rawCategory);
+                          setWriteTags(post.tags.join(","));
+                          setIsWriteModalOpen(true);
                         }}
-                        className="flex items-center gap-1"
+                        className="text-blue-500"
                       >
-                        <ThumbsUp size={18} />
-                        <span>{post.likes}</span>
+                        ✏
                       </button>
 
-                      <span className="flex items-center gap-1">
-                        <MessageSquare size={18} />
-                        <span>{post.comments}</span>
-                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deletePost(post.id);
+                        }}
+                        className="text-red-500"
+                      >
+                        <Trash size={20} />
+                      </button>
+                    </div>
+                  )}
 
-                      <span className="flex items-center gap-1">
-                        <Eye size={18} />
-                        <span>{post.views}</span>
-                      </span>
+                  <div className="flex items-start space-x-4">
+                    <div className="text-4xl">{post.icon}</div>
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold">{post.title}</h3>
+                        {post.isMine && (
+                          <span className="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">
+                            내 글
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-gray-600 text-sm">
+                        <span>{post.author}</span>
+                        <span className="flex items-center">
+                          <MapPin size={14} className="mr-1" />
+                          {post.location}
+                        </span>
+                        <span className="flex items-center">
+                          <Clock size={14} className="mr-1" />
+                          {post.createdAt}
+                        </span>
+                      </div>
+
+                      <p className="line-clamp-2 mt-2">{post.content}</p>
+
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {post.tags.map((tag, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 bg-gray-100 rounded-full text-sm text-primary-purple"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-5 mt-3 text-gray-600">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLike(post);
+                          }}
+                          className="flex items-center gap-1"
+                        >
+                          <ThumbsUp size={18} />
+                          <span>{post.likes}</span>
+                        </button>
+
+                        <span className="flex items-center gap-1">
+                          <MessageSquare size={18} />
+                          <span>{post.comments}</span>
+                        </span>
+
+                        <span className="flex items-center gap-1">
+                          <Eye size={18} />
+                          <span>{post.views}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
+                </Card>
+              );
+            })}
+
+            {finalPosts.length === 0 && (
+              <Card>
+                <div className="text-center py-10 text-gray-400">
+                  <MessageSquare size={40} className="mx-auto mb-3 opacity-50" />
+                  게시글이 없습니다
                 </div>
               </Card>
-            );
-          })}
-
-          {finalPosts.length === 0 && (
-            <Card>
-              <div className="text-center py-10 text-gray-400">
-                <MessageSquare size={40} className="mx-auto mb-3 opacity-50" />
-                게시글이 없습니다
-              </div>
-            </Card>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 상세보기 모달 */}
@@ -531,6 +860,99 @@ const Community = () => {
         )}
       </Modal>
 
+      {/* 사기번호 상세 모달 */}
+      <Modal
+        isOpen={isFraudDetailModalOpen}
+        onClose={() => setIsFraudDetailModalOpen(false)}
+        title={
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertTriangle size={24} />
+            신고 상세 정보
+          </div>
+        }
+        size="lg"
+      >
+        {selectedFraudReport && (
+          <div className="space-y-4">
+            <div
+              className={`p-4 rounded-lg ${
+                getSeverityColor(selectedFraudReport.severity_level).bg
+              }`}
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-500">전화번호:</span>
+                  <span className="ml-2 font-bold text-lg">
+                    {selectedFraudReport.phone_number}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">신고 유형:</span>
+                  <span className="ml-2 font-bold">
+                    {getReportTypeLabel(selectedFraudReport.report_type)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">신고 건수:</span>
+                  <span className="ml-2 font-bold">
+                    {selectedFraudReport.report_count}건
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">총 피해액:</span>
+                  <span className="ml-2 font-bold text-red-600">
+                    {formatCurrency(selectedFraudReport.total_damage)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">피해 내용</h4>
+              <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+                {selectedFraudReport.description}
+              </p>
+            </div>
+
+            {selectedFraudReport.suspect_info && (
+              <div>
+                <h4 className="font-semibold mb-2">예약자 정보</h4>
+                <p className="text-gray-700">
+                  {selectedFraudReport.suspect_info}
+                </p>
+              </div>
+            )}
+
+            {selectedFraudReport.additional_info && (
+              <div>
+                <h4 className="font-semibold mb-2">추가 정보</h4>
+                <p className="text-gray-700">
+                  {selectedFraudReport.additional_info}
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <span>지역: {selectedFraudReport.region || "미지정"}</span>
+              <span>
+                신고일:{" "}
+                {new Date(selectedFraudReport.created_at).toLocaleString()}
+              </span>
+            </div>
+
+            <button
+              onClick={() => {
+                setIsFraudDetailModalOpen(false);
+                setIsFraudReportModalOpen(true);
+              }}
+              className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+            >
+              나도 피해입니다 - 추가 신고하기
+            </button>
+          </div>
+        )}
+      </Modal>
+
       {/* 글쓰기 모달 */}
       <Modal
         isOpen={isWriteModalOpen}
@@ -578,6 +1000,21 @@ const Community = () => {
           </button>
         </div>
       </Modal>
+
+      {/* 사기번호 신고 모달 */}
+      <FraudReportModal
+        isOpen={isFraudReportModalOpen}
+        onClose={() => setIsFraudReportModalOpen(false)}
+        onSuccess={() => {
+          loadFraudReports();
+          setToast({
+            show: true,
+            message: "신고가 접수되었습니다.",
+            type: "success",
+          });
+        }}
+        reporterId={myOwnerId}
+      />
 
       <Toast
         show={toast.show}

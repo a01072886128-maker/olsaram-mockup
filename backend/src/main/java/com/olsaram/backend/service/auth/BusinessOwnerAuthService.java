@@ -54,7 +54,7 @@ public class BusinessOwnerAuthService {
 
         BusinessOwner owner = BusinessOwner.builder()
             .loginId(loginId)
-            .password(passwordEncoder.encode(password))
+            .password(password)  // 평문 저장 (DB에서 직접 확인 가능)
             .name(name)
             .phone(phone)
             .email(email)
@@ -138,13 +138,26 @@ public class BusinessOwnerAuthService {
 
     /**
      * 사장님 로그인
+     * - BCrypt 암호화된 비밀번호 또는 평문 비밀번호 둘 다 허용
      */
     @Transactional
     public BusinessOwner login(String loginId, String password) {
         BusinessOwner owner = businessOwnerRepository.findByLoginId(loginId)
             .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 잘못되었습니다."));
 
-        if (!passwordEncoder.matches(password, owner.getPassword())) {
+        // 평문 비밀번호 먼저 체크
+        boolean passwordMatch = owner.getPassword().equals(password);
+
+        // 평문이 아니면 BCrypt 체크 시도
+        if (!passwordMatch) {
+            try {
+                passwordMatch = passwordEncoder.matches(password, owner.getPassword());
+            } catch (Exception e) {
+                // BCrypt 형식이 아닌 경우 무시
+            }
+        }
+
+        if (!passwordMatch) {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 잘못되었습니다.");
         }
 

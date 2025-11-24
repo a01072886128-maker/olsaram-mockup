@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import storeAPI from "../../services/store";
 import { useAuth } from "../../contexts/AuthContext";
+import Navbar from "../../components/Navbar";
 
 export default function StoreDetail() {
   const { storeId } = useParams();
@@ -88,7 +89,10 @@ export default function StoreDetail() {
     return <p className="text-center mt-20">가게 정보를 찾을 수 없습니다.</p>;
 
   return (
-    <div className="p-6 space-y-10">
+    <div className="min-h-screen bg-gray-50">
+      <Navbar userType="customer" />
+
+      <div className="p-6 space-y-10">
       {/* 가게 정보 */}
       <div>
         <h1 className="text-3xl font-bold">{store.name}</h1>
@@ -175,6 +179,7 @@ export default function StoreDetail() {
           </button>
         </form>
       </section>
+      </div>
     </div>
   );
 }

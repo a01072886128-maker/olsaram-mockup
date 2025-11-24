@@ -93,33 +93,14 @@ function Landing() {
       <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-text-primary">올사람</h1>
-          <nav className="hidden md:flex gap-6">
-            <a
-              href="#features"
-              className="text-gray-700 hover:text-primary-green transition-colors"
-            >
-              서비스 소개
-            </a>
-            <a
-              href="#how-it-works"
-              className="text-gray-700 hover:text-primary-green transition-colors"
-            >
-              작동 원리
-            </a>
-            <a
-              href="#pricing"
-              className="text-gray-700 hover:text-primary-green transition-colors"
-            >
-              요금제
-            </a>
-          </nav>
+
           <div className="flex gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
                 localStorage.clear();
-                window.location.href = '/auth/login';
+                window.location.href = "/auth/login";
               }}
             >
               로그인
@@ -224,7 +205,8 @@ function Landing() {
               지금 이 순간에도
             </h2>
             <p className="text-xl text-gray-600 mb-20">
-              수많은 소상공인들이 노쇼로 인해 어려움을 겪고 있습니다
+              수많은 소상공인들이 예약 불이행과 사기성 예약으로 어려움을 겪고
+              있습니다.
             </p>
           </FadeIn>
 
@@ -235,9 +217,11 @@ function Landing() {
                   {noShowAmount.toFixed(1)}조 원
                 </div>
                 <div className="text-lg text-gray-600 mb-2">
-                  연간 노쇼 피해액
+                  연간 노쇼로 인한 경제적 손실
                 </div>
-                <div className="text-sm text-gray-500">음식점만 계산해도</div>
+                <div className="text-sm text-gray-500">
+                  작은 가게일수록 더 큰 타격
+                </div>
               </div>
             </FadeIn>
 
@@ -246,8 +230,10 @@ function Landing() {
                 <div className="text-6xl font-bold text-primary-green mb-4">
                   0.7%
                 </div>
-                <div className="text-lg text-gray-600 mb-2">검거율</div>
-                <div className="text-sm text-gray-500">사실상 처벌 불가능</div>
+                <div className="text-lg text-gray-600 mb-2">실제 검거율</div>
+                <div className="text-sm text-gray-500">
+                  피해가 발생해도 해결은 거의 불가능
+                </div>
               </div>
             </FadeIn>
 
@@ -256,8 +242,12 @@ function Landing() {
                 <div className="text-6xl font-bold text-red-600 mb-4">
                   2,892건
                 </div>
-                <div className="text-lg text-gray-600 mb-2">올해 노쇼 사기</div>
-                <div className="text-sm text-gray-500">조직적으로 진화 중</div>
+                <div className="text-lg text-gray-600 mb-2">
+                  올해 신고된 사기성 예약
+                </div>
+                <div className="text-sm text-gray-500">
+                  더욱 교묘하게 증가하는 추세
+                </div>
               </div>
             </FadeIn>
           </div>
@@ -265,11 +255,12 @@ function Landing() {
           <FadeIn delay={0.8}>
             <div className="mt-20 p-8 bg-red-50 rounded-2xl max-w-3xl mx-auto">
               <p className="text-xl text-red-900 font-semibold">
-                "예약금을 받으면 손님이 줄어들까봐
-                <br />
-                아무것도 못하고 있습니다"
+                "예약금을 받으면 손님이 줄어들까봐,
+                <br />또 안 받자니 피해가 너무 커요. 정말 답이 없습니다..."
               </p>
-              <p className="text-sm text-red-700 mt-4">- 홍대 중국집 사장님</p>
+              <p className="text-sm text-red-700 mt-4">
+                - 금남로 중국집 사장님
+              </p>
             </div>
           </FadeIn>
         </div>
@@ -292,7 +283,7 @@ function Landing() {
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                   복잡한 설정 없이, 어려운 기술 없이
                   <br />
-                  올사람이 모든 걸 대신합니다
+                  올사람이 소상공인을 위한 약속을 지켜나갑니다
                 </p>
 
                 <div className="space-y-6">
@@ -302,11 +293,11 @@ function Landing() {
                     </div>
                     <div>
                       <h3 className="font-bold text-lg mb-1 text-text-primary">
-                        사기 예약 자동 차단
+                        사기 예약 위험도 알림
                       </h3>
                       <p className="text-gray-600">
-                        예약 패턴을 실시간 분석하여 의심 예약을 사전에
-                        차단합니다
+                        AI가 예약 패턴을 분석해 의심스러운 예약을 사전에
+                        사장님께 알려드립니다
                       </p>
                     </div>
                   </div>
@@ -317,10 +308,11 @@ function Landing() {
                     </div>
                     <div>
                       <h3 className="font-bold text-lg mb-1 text-text-primary">
-                        빈자리 실시간 매칭
+                        예약 리마인드 자동 전송
                       </h3>
                       <p className="text-gray-600">
-                        취소 발생 시 대기자에게 즉시 알림, 손실을 0으로 만듭니다
+                        예약 시간 전에 고객에게 자동 메시지를 발송해 노쇼 발생을
+                        크게 줄입니다.
                       </p>
                     </div>
                   </div>
@@ -334,7 +326,8 @@ function Landing() {
                         예약금 0원 시스템
                       </h3>
                       <p className="text-gray-600">
-                        카드 등록만으로 예약 완료, 노쇼 시에만 자동 청구됩니다
+                        카드 등록만으로 예약 완료, 실제 노쇼 시에만 자동
+                        청구됩니다
                       </p>
                     </div>
                   </div>
@@ -452,14 +445,16 @@ function Landing() {
             {[
               {
                 icon: <Shield className="w-8 h-8" />,
-                title: "AI 사기 탐지",
-                description: "예약 패턴 실시간 분석으로 조직적 노쇼 사전 차단",
+                title: "AI 사기 예약 위험도 알림",
+                description:
+                  "AI 분석으로 의심 예약을 미리 안내해 안전한 운영을 지원합니다.",
                 delay: 0,
               },
               {
                 icon: <Zap className="w-8 h-8" />,
-                title: "실시간 매칭",
-                description: "취소 발생 시 대기자에게 즉시 알림, 빈자리 0%",
+                title: "예약 리마인드 자동 전송",
+                description:
+                  "고객에게 자동 안내 메시지를 발송해 노쇼를 예방합니다.",
                 delay: 0.1,
               },
               {
@@ -499,12 +494,15 @@ function Landing() {
       </section>
 
       {/* 섹션 5: 성과 */}
-      <section ref={performanceRef} className="py-32 bg-primary-green text-white">
+      <section
+        ref={performanceRef}
+        className="py-32 bg-primary-green text-white"
+      >
         <div className="container mx-auto px-4 text-center">
           <FadeIn>
-            <h2 className="text-5xl font-bold mb-6">이미 검증된 효과</h2>
+            <h2 className="text-5xl font-bold mb-6">올사람이 만들어갈 변화</h2>
             <p className="text-xl opacity-90 mb-20">
-              1,000개 이상의 가게가 올사람과 함께합니다
+              소상공인을 위하는 노쇼방지 플랫폼 올사람이 가져올 기대 효과 입니다{" "}
             </p>
           </FadeIn>
 
@@ -512,14 +510,16 @@ function Landing() {
             <FadeIn delay={0.2}>
               <div>
                 <div className="text-6xl font-bold mb-4">{reduction}%↓</div>
-                <div className="text-lg opacity-90">노쇼율 감소</div>
+                <div className="text-lg opacity-90">예상 노쇼율 감소</div>
               </div>
             </FadeIn>
 
             <FadeIn delay={0.4}>
               <div>
                 <div className="text-6xl font-bold mb-4">{detectionRate}%</div>
-                <div className="text-lg opacity-90">AI 탐지 정확도</div>
+                <div className="text-lg opacity-90">
+                  AI위험도 분석 목표 정확도
+                </div>
               </div>
             </FadeIn>
 
@@ -528,7 +528,9 @@ function Landing() {
                 <div className="text-6xl font-bold mb-4">
                   {storeCount.toLocaleString()}+
                 </div>
-                <div className="text-lg opacity-90">가맹점 수</div>
+                <div className="text-lg opacity-90">
+                  예상 누적 이용 매장/사용자 수
+                </div>
               </div>
             </FadeIn>
           </div>
@@ -543,7 +545,8 @@ function Landing() {
               지금 바로 시작하세요
             </h2>
             <p className="text-xl text-gray-600 mb-12">
-              3분이면 충분합니다. 복잡한 설정은 필요 없습니다.
+              설치 없이 바로 사용할 수 있습니다. 사장님께 필요한 기능만 간단하게
+              담았습니다.
             </p>
           </FadeIn>
 
@@ -571,9 +574,9 @@ function Landing() {
 
           <FadeIn delay={0.5}>
             <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
-              <div>✓ 신용카드 등록 불필요</div>
-              <div>✓ 언제든 해지 가능</div>
-              <div>✓ 24시간 고객 지원</div>
+              <div>✓ 설치 없이 바로 사용 가능</div>
+              <div>✓ 복잡한 설정 필요 없음</div>
+              <div>✓ 언제든 해지 가능 </div>
             </div>
           </FadeIn>
         </div>

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { storeAPI } from "../../services/store";
 import { useAuth } from "../../contexts/AuthContext";
-import { Calendar, Users, Clock, ArrowLeft, CreditCard } from "lucide-react";
+import { Calendar, Users, Clock, CreditCard } from "lucide-react";
+import Navbar from "../../components/Navbar";
 
 export default function StoreReserve() {
   const { storeId } = useParams();
@@ -88,18 +89,7 @@ export default function StoreReserve() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-xl mx-auto px-4 h-14 flex items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="ml-2 text-lg font-semibold">예약하기</h1>
-        </div>
-      </header>
+      <Navbar userType="customer" />
 
       <main className="max-w-xl mx-auto px-4 py-6">
         {/* 가게 정보 */}

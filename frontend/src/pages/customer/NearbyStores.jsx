@@ -8,13 +8,12 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   MapPin,
   Star,
   Clock,
-  LogOut,
   Loader2,
   ChevronDown,
   Check,
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import Navbar from "../../components/Navbar";
 import {
   Dialog,
   DialogHeader,
@@ -35,7 +35,6 @@ import {
   DialogFooter,
 } from "../../components/ui/dialog";
 import { Card, CardContent } from "../../components/ui/card";
-import { useAuth } from "../../contexts/AuthContext";
 import { storeAPI } from "../../services/store";
 
 const DEFAULT_LOCATION = {
@@ -62,8 +61,6 @@ const DISTANCE_FILTERS = [
 const SORT_OPTIONS = ["추천순", "거리순", "평점순", "리뷰순"];
 
 function NearbyStores() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
@@ -324,65 +321,12 @@ function NearbyStores() {
     });
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
-  };
-
   const selectedRadiusLabel =
     DISTANCE_FILTERS.find((f) => f.value === radiusFilter)?.label || "800m";
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link
-              to="/"
-              className="text-xl font-bold text-slate-900 hover:text-blue-600"
-            >
-              올사람
-            </Link>
-
-            <nav className="hidden md:flex gap-6">
-              <Link
-                to="/customer/nearby"
-                className="text-sm text-slate-900 font-semibold border-b-2 border-blue-600 pb-4"
-              >
-                내 주변 맛집
-              </Link>
-              <Link
-                to="/customer/voice-reservation"
-                className="text-sm text-slate-600 hover:text-slate-900"
-              >
-                음성 예약
-              </Link>
-              <Link
-                to="/customer/community"
-                className="text-sm text-slate-600 hover:text-slate-900"
-              >
-                커뮤니티
-              </Link>
-              <Link
-                to="/customer/my-page"
-                className="text-sm text-slate-600 hover:text-slate-900"
-              >
-                마이페이지
-              </Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-600">
-              {user?.name || "고객"}님
-            </span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-1" /> 로그아웃
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar userType="customer" />
 
       {/* 위치 권한 모달 */}
       <Dialog open={showPermissionModal} onClose={() => {}}>

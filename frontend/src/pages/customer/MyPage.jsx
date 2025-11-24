@@ -17,6 +17,7 @@ import {
 import { Gift, Clock, MapPin } from "lucide-react";
 
 import Modal from "../../components/Modal";
+import Navbar from "../../components/Navbar";
 import { useState, useEffect } from "react";
 
 function CustomerMyPage() {
@@ -134,26 +135,7 @@ function CustomerMyPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ---------------- Header ---------------- */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-8 h-20 flex items-center justify-between">
-          <a
-            href="/"
-            className="text-2xl font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
-          >
-            올사람
-          </a>
-
-          <div className="flex gap-4">
-            <Button variant="ghost" className="text-slate-700 text-base">
-              맛집 탐색
-            </Button>
-            <Button variant="ghost" className="text-slate-700 text-base">
-              내 예약
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar userType="customer" />
 
       <main className="container mx-auto px-6 py-8">
         {/* ---------------- 프로필 카드 ---------------- */}

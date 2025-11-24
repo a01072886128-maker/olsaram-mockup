@@ -80,6 +80,7 @@ const EditBusiness = () => {
     }
 
     const payload = {
+      owner_id: ownerId,
       business_name: formState.businessName.trim(),
       business_number: formState.businessNumber.trim(),
       category: formState.category,

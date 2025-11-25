@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import authAPI from '../../services/api';
@@ -97,17 +98,20 @@ function Register() {
             <label className="text-sm font-medium text-text-primary" htmlFor="role">
               회원 유형
             </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green"
-            >
-              <option value="user">고객</option>
-              <option value="owner">사장님</option>
-            </select>
+            <div className="relative">
+              <ChevronDown className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-green" />
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className="w-full appearance-none rounded-xl border border-border-color bg-white pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
+              >
+                <option value="user">고객</option>
+                <option value="owner">사장님</option>
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -160,6 +164,23 @@ function Register() {
             />
           </div>
 
+          {formData.role === 'owner' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-primary" htmlFor="businessNumber">
+                사업자등록번호 <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="businessNumber"
+                name="businessNumber"
+                placeholder="123-45-67890"
+                value={formData.businessNumber}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                required={formData.role === 'owner'}
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-primary" htmlFor="name">
               이름 <span className="text-red-500">*</span>
@@ -204,23 +225,6 @@ function Register() {
               disabled={isSubmitting}
             />
           </div>
-
-          {formData.role === 'owner' && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-primary" htmlFor="businessNumber">
-                사업자등록번호 <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="businessNumber"
-                name="businessNumber"
-                placeholder="123-45-67890"
-                value={formData.businessNumber}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                required={formData.role === 'owner'}
-              />
-            </div>
-          )}
 
           {formError && <p className="text-sm text-red-500">{formError}</p>}
 

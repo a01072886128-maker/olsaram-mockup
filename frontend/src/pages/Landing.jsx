@@ -108,6 +108,10 @@ function Landing() {
             <Button
               size="sm"
               className="bg-primary-green hover:bg-dark-green text-white"
+              onClick={() => {
+                localStorage.clear();
+                navigate("/auth/register");
+              }}
             >
               무료 시작
             </Button>
@@ -141,27 +145,16 @@ function Landing() {
           </FadeIn>
 
           <FadeIn delay={0.6}>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <div className="flex justify-center mb-12">
               <Button
                 size="lg"
-                className="text-lg px-10 h-16 bg-primary-green hover:bg-dark-green text-white"
+                className="text-lg px-12 h-16 bg-primary-green hover:bg-dark-green text-white"
                 onClick={() => {
                   localStorage.clear();
                   navigate("/auth/login");
                 }}
               >
-                사장님 시작하기 →
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-lg px-10 h-16 border-2 border-primary-green text-primary-green hover:bg-primary-green/10"
-                onClick={() => {
-                  localStorage.clear();
-                  navigate("/auth/customer-login");
-                }}
-              >
-                고객님 시작하기→
+                지금 시작하기
               </Button>
             </div>
           </FadeIn>

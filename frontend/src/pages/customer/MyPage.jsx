@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -15,10 +16,8 @@ import {
   TabsTrigger,
 } from "../../components/ui/tabs";
 import { Gift, Clock, MapPin } from "lucide-react";
-
 import Modal from "../../components/Modal";
-import Navbar from "../../components/Navbar";
-import { useState, useEffect } from "react";
+import PageLayout from "../../components/Layout";
 
 function CustomerMyPage() {
   const [modalType, setModalType] = useState(null);
@@ -123,10 +122,8 @@ function CustomerMyPage() {
   const progressValue = (points / nextLevel) * 100;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar userType="customer" />
-
-      <main className="container mx-auto px-6 py-12 space-y-10">
+    <PageLayout userType="customer">
+      <div className="space-y-10">
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-2xl">
           <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-primary-green/20 blur-3xl" />
@@ -143,9 +140,6 @@ function CustomerMyPage() {
                 <h1 className="text-4xl font-semibold tracking-tight">{profile.name}</h1>
                 <Badge className="bg-emerald-400 text-slate-900">일반 회원</Badge>
               </div>
-              <p className="text-sm uppercase tracking-[0.4em] text-emerald-200">
-                #{customerId ?? "ID 없음"}
-              </p>
               <p className="text-base text-slate-200">{profile.phone}</p>
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="rounded-2xl bg-white/10 px-4 py-2">
@@ -169,7 +163,7 @@ function CustomerMyPage() {
               </div>
               <Progress value={progressValue} className="h-2 rounded-full bg-white/30" />
               <div className="text-xs text-white/80">
-                노쇼 없는 예약 습관이 쌓이면 보다 풍성한 리워드와 혜택이 기다립니다.
+                노쇼 없는 예약 습관이 쌓이면 더 큰 리워드가 기다립니다.
               </div>
             </div>
           </div>
@@ -204,18 +198,11 @@ function CustomerMyPage() {
         </section>
 
         <section className="space-y-6 rounded-3xl bg-white px-6 py-6 shadow-lg">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.4em] text-slate-400">주요 관리</p>
-              <h2 className="text-2xl font-semibold text-slate-900">예약 & 설정</h2>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" size="sm" onClick={() => setModalType("profile")}>개인정보 수정</Button>
-              <Button variant="outline" size="sm" onClick={() => setModalType("alert")}>알림 설정</Button>
-              <Button variant="outline" size="sm" onClick={() => setModalType("payment")}>결제 수단 관리</Button>
-              <Button variant="outline" size="sm" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => setModalType("withdraw")}>회원 탈퇴</Button>
-            </div>
+          <div>
+            <p className="text-sm uppercase tracking-[0.4em] text-slate-400">주요 관리</p>
+            <h2 className="text-2xl font-semibold text-slate-900">예약 & 설정</h2>
           </div>
+
           <Tabs defaultValue="history" className="space-y-6">
             <TabsList className="gap-2 rounded-2xl bg-slate-100 p-1 shadow-inner">
               <TabsTrigger value="history">예약 내역</TabsTrigger>
@@ -258,8 +245,12 @@ function CustomerMyPage() {
                           </div>
                         </div>
                         <div className="flex flex-col gap-3 md:flex-row">
-                          <Button variant="outline" size="sm">다시 예약하기</Button>
-                          <Button variant="ghost" size="sm">리뷰 작성</Button>
+                          <Button variant="outline" size="sm">
+                            다시 예약하기
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            리뷰 작성
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -275,7 +266,9 @@ function CustomerMyPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-4xl font-bold text-slate-900">{points.toLocaleString()}P</div>
-                  <p className="text-sm text-slate-600">1P = 1원. 전국 가맹점에서 자유롭게 사용 가능합니다. 지금 바로 포인트로 결제하세요.</p>
+                  <p className="text-sm text-slate-600">
+                    1P = 1원. 전국 가맹점에서 자유롭게 사용 가능합니다. 지금 바로 포인트로 결제하세요.
+                  </p>
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white">포인트 사용하기</Button>
                 </CardContent>
               </Card>
@@ -284,36 +277,82 @@ function CustomerMyPage() {
             <TabsContent value="settings">
               <Card className="border-slate-200 shadow-sm">
                 <CardContent className="space-y-4 px-4 py-5">
-                  <Button variant="outline" className="w-full justify-start border-slate-300" onClick={() => setModalType("profile")}>개인정보 수정</Button>
-                  <Button variant="outline" className="w-full justify-start border-slate-300" onClick={() => setModalType("alert")}>알림 설정</Button>
-                  <Button variant="outline" className="w-full justify-start border-slate-300" onClick={() => setModalType("payment")}>결제 수단 관리</Button>
-                  <Button variant="outline" className="w-full justify-start border-red-300 text-red-600 hover:bg-red-50" onClick={() => setModalType("withdraw")}>회원 탈퇴</Button>
+                  {[
+                    {
+                      title: "개인정보 수정",
+                      desc: "이름, 연락처 등을 변경합니다.",
+                      action: () => setModalType("profile"),
+                      variant: "outline",
+                    },
+                    {
+                      title: "알림 설정",
+                      desc: "푸시·이메일 알림을 관리합니다.",
+                      action: () => setModalType("alert"),
+                      variant: "outline",
+                    },
+                    {
+                      title: "결제 수단 관리",
+                      desc: "등록된 카드 정보를 관리합니다.",
+                      action: () => setModalType("payment"),
+                      variant: "outline",
+                    },
+                    {
+                      title: "회원 탈퇴",
+                      desc: "계정 및 예약 정보를 삭제합니다.",
+                      action: () => setModalType("withdraw"),
+                      variant: "outline",
+                      danger: true,
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.title}
+                      className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{item.title}</p>
+                        <p className="text-xs text-slate-500">{item.desc}</p>
+                      </div>
+                      <Button
+                        variant={item.variant}
+                        size="sm"
+                        className={item.danger ? "border-red-300 text-red-600 hover:bg-red-50" : "border-slate-300"}
+                        onClick={item.action}
+                      >
+                        {item.title}
+                      </Button>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
         </section>
-      </main>
+      </div>
 
-        <PrivacyModal
-          isOpen={modalType === "profile"}
+      <PrivacyModal
+        isOpen={modalType === "profile"}
         onClose={closeModal}
         profile={profile}
         setProfile={setProfile}
       />
       <AlertModal isOpen={modalType === "alert"} onClose={closeModal} />
-        <PaymentModal
-          isOpen={modalType === "payment"}
+      <PaymentModal
+        isOpen={modalType === "payment"}
         onClose={closeModal}
         cardNumber={cardNumber}
         expiry={expiry}
         cvc={cvc}
         alias={alias}
-        handlers={{ setCardNumber: handleCardNumberChange, setExpiry: handleExpiryChange, setCvc, setAlias }}
+        handlers={{
+          setCardNumber: handleCardNumberChange,
+          setExpiry: handleExpiryChange,
+          setCvc,
+          setAlias,
+        }}
         handleRegister={handleRegister}
       />
       <WithdrawModal isOpen={modalType === "withdraw"} onClose={closeModal} />
-    </div>
+    </PageLayout>
   );
 }
 
@@ -332,6 +371,7 @@ function PrivacyModal({ isOpen, onClose, profile, setProfile }) {
             onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
           />
         </label>
+
         <label className="block">
           <span className="text-sm text-slate-700">전화번호</span>
           <input
@@ -341,6 +381,7 @@ function PrivacyModal({ isOpen, onClose, profile, setProfile }) {
             onChange={(e) => setProfile((prev) => ({ ...prev, phone: e.target.value }))}
           />
         </label>
+
         <label className="block">
           <span className="text-sm text-slate-700">비밀번호 변경 (선택)</span>
           <input
@@ -350,6 +391,7 @@ function PrivacyModal({ isOpen, onClose, profile, setProfile }) {
             onChange={(e) => setProfile((prev) => ({ ...prev, newPassword: e.target.value }))}
           />
         </label>
+
         <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={onClose}>
           저장
         </Button>
@@ -365,11 +407,7 @@ function AlertModal({ isOpen, onClose }) {
       <div className="space-y-4 text-sm text-slate-600">
         <p>알림 수신 여부를 개별적으로 설정하고 푸시/이메일 알림을 관리하세요.</p>
         <div className="space-y-3">
-          {[
-            "예약 확정",
-            "알림/리워드",
-            "프로모션",
-          ].map((item) => (
+          {["예약 확정", "알림/리워드", "프로모션"].map((item) => (
             <div key={item} className="flex items-center justify-between">
               <span>{item}</span>
               <input type="checkbox" className="h-4 w-4" defaultChecked />
@@ -450,7 +488,11 @@ function WithdrawModal({ isOpen, onClose }) {
           <Button variant="ghost" className="flex-1" onClick={onClose}>
             취소
           </Button>
-          <Button variant="outline" className="flex-1 border-red-300 text-red-600" onClick={() => alert("탈퇴 처리 중...") }>
+          <Button
+            variant="outline"
+            className="flex-1 border-red-300 text-red-600"
+            onClick={() => alert("탈퇴 처리 중...")}
+          >
             탈퇴하기
           </Button>
         </div>

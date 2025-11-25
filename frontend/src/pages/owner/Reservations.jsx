@@ -24,7 +24,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { reservationAPI } from "../../services/reservations";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../../components/Navbar";
+import PageLayout from "../../components/Layout";
 
 /* -------------------------------------------------------------
    날짜/시간 포맷
@@ -734,104 +734,90 @@ function Reservations() {
 
   /* ---------------- 렌더 ---------------- */
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar userType="owner" />
-
-      {/* 메인 */}
-      <main className="container mx-auto px-8 py-10">
-        <div className="flex justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              예약 관리
-              <Badge variant="outline" className="text-sm font-normal">
-                실시간 노쇼 위험도 분석
-              </Badge>
-            </h2>
-            <p className="text-base text-gray-600 mt-1">
-              예약 현황과 노쇼 위험도를 한눈에 확인하세요. (DB 기반 실제 데이터)
-            </p>
-          </div>
-
-          <div className="flex flex-col items-end">
-            <div className="flex gap-3 items-center">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="border border-gray-300 px-3 py-2 rounded-md text-sm"
-              />
-            </div>
-            <Button
-              variant="ghost"
-              className="mt-1 text-sm text-gray-500"
-              onClick={() => setSelectedDate("")}
-            >
-              필터 초기화
-            </Button>
-          </div>
+    <PageLayout userType="owner">
+      <div className="flex justify-between mb-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            예약 관리
+            <Badge variant="outline" className="text-sm font-normal">
+              실시간 노쇼 위험도 분석
+            </Badge>
+          </h2>
+          <p className="text-base text-gray-600 mt-1">
+            예약 현황과 노쇼 위험도를 한눈에 확인하세요. (DB 기반 실제 데이터)
+          </p>
         </div>
 
-        {/* 노쇼율 요약 통계 */}
-        <NoShowSummary noShowRates={noShowRates} loading={noShowLoading} />
+        <div className="flex flex-col items-end">
+          <div className="flex gap-3 items-center">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border border-gray-300 px-3 py-2 rounded-md text-sm"
+            />
+          </div>
+          <Button
+            variant="ghost"
+            className="mt-1 text-sm text-gray-500"
+            onClick={() => setSelectedDate("")}
+          >
+            필터 초기화
+          </Button>
+        </div>
+      </div>
 
-        {/* 탭 */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="border h-12 bg-white">
-            <TabsTrigger value="all">
-              전체 ({filterByDate(reservations).length}건)
-            </TabsTrigger>
-            <TabsTrigger value="today">
-              오늘 ({filterByDate(categorized.today).length}건)
-            </TabsTrigger>
-            <TabsTrigger value="upcoming">
-              예정 ({filterByDate(categorized.upcoming).length}건)
-            </TabsTrigger>
-            <TabsTrigger value="past">
-              지난 예약 ({filterByDate(categorized.past).length}건)
-            </TabsTrigger>
-            <TabsTrigger value="cancelled">
-              취소 ({filterByDate(categorized.cancelled).length}건)
-            </TabsTrigger>
-          </TabsList>
+      <NoShowSummary noShowRates={noShowRates} loading={noShowLoading} />
 
-          <TabsContent value="all" className="mt-8">
-            {renderReservations(reservations, "등록된 예약이 없습니다.")}
-          </TabsContent>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="border h-12 bg-white">
+          <TabsTrigger value="all">
+            전체 ({filterByDate(reservations).length}건)
+          </TabsTrigger>
+          <TabsTrigger value="today">
+            오늘 ({filterByDate(categorized.today).length}건)
+          </TabsTrigger>
+          <TabsTrigger value="upcoming">
+            예정 ({filterByDate(categorized.upcoming).length}건)
+          </TabsTrigger>
+          <TabsTrigger value="past">
+            지난 예약 ({filterByDate(categorized.past).length}건)
+          </TabsTrigger>
+          <TabsTrigger value="cancelled">
+            취소 ({filterByDate(categorized.cancelled).length}건)
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="today" className="mt-8">
-            {renderReservations(categorized.today, "오늘 예약이 없습니다.")}
-          </TabsContent>
+        <TabsContent value="all" className="mt-8">
+          {renderReservations(reservations, "등록된 예약이 없습니다.")}
+        </TabsContent>
 
-          <TabsContent value="upcoming" className="mt-8">
-            {renderReservations(categorized.upcoming, "예정된 예약이 없습니다.")}
-          </TabsContent>
+        <TabsContent value="today" className="mt-8">
+          {renderReservations(categorized.today, "오늘 예약이 없습니다.")}
+        </TabsContent>
 
-          <TabsContent value="past" className="mt-8">
-            {renderReservations(categorized.past, "지난 예약이 없습니다.")}
-          </TabsContent>
+        <TabsContent value="upcoming" className="mt-8">
+          {renderReservations(categorized.upcoming, "예정된 예약이 없습니다.")}
+        </TabsContent>
 
-          <TabsContent value="cancelled" className="mt-8">
-            {renderReservations(categorized.cancelled, "취소된 예약이 없습니다.")}
-          </TabsContent>
-        </Tabs>
-      </main>
+        <TabsContent value="past" className="mt-8">
+          {renderReservations(categorized.past, "지난 예약이 없습니다.")}
+        </TabsContent>
 
-      {/* 스타일 */}
+        <TabsContent value="cancelled" className="mt-8">
+          {renderReservations(categorized.cancelled, "취소된 예약이 없습니다.")}
+        </TabsContent>
+      </Tabs>
+
       <style>{`
         @keyframes pulse-subtle {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.6;
-          }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
         }
-        .animate-pulse-subtle {
-          animation: pulse-subtle 2s infinite;
-        }
+        .animate-pulse-subtle { animation: pulse-subtle 2s infinite; }
       `}</style>
-    </div>
+    </PageLayout>
   );
 }
 

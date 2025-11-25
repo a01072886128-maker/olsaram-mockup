@@ -7,7 +7,7 @@
  * - 하단: 맛집 리스트
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -41,6 +41,25 @@ const DEFAULT_LOCATION = {
   lat: 35.1495,
   lng: 126.9173,
   name: "광주 금남로",
+};
+
+const LOCATION_CONSENT_COOKIE = "olsaram_location_consent";
+
+const setCookie = (name, value, days = 30) => {
+  if (typeof document === "undefined") return;
+  const expiration = new Date();
+  expiration.setTime(expiration.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expiration.toUTCString()};path=/`;
+};
+
+const getCookie = (name) => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop().split(";").shift();
+  }
+  return null;
 };
 
 const CATEGORIES = [
@@ -96,27 +115,31 @@ function NearbyStores() {
     }
   }, []);
 
-  // 첫 진입 → 위치 권한 모달 표시
-  useEffect(() => {
-    if (step === "initial") {
-      setShowPermissionModal(true);
+  const fetchNearbyStores = useCallback(async (lat, lng, radius) => {
+    try {
+      setIsLoading(true);
+      const data = await storeAPI.getNearbyStores(lat, lng, radius);
+      setStores(data.stores || data || []);
+    } catch (err) {
+      console.error("매장 검색 오류:", err);
+      setStores([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [step]);
+  }, []);
 
-  // 위치 권한 허용
-  const handleAllowLocation = () => {
-    setShowPermissionModal(false);
+  const beginLocationLookup = useCallback(() => {
     setStep("requesting");
     setIsLoading(true);
 
-    if (!navigator.geolocation) {
+    const useDefaultLocation = () => {
       setLocation(DEFAULT_LOCATION);
       setStep("located");
-      fetchNearbyStores(
-        DEFAULT_LOCATION.lat,
-        DEFAULT_LOCATION.lng,
-        radiusFilter
-      );
+      fetchNearbyStores(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng, radiusFilter);
+    };
+
+    if (!navigator.geolocation) {
+      useDefaultLocation();
       return;
     }
 
@@ -129,13 +152,7 @@ function NearbyStores() {
       },
       (err) => {
         console.log("위치 권한 오류:", err);
-        setLocation(DEFAULT_LOCATION);
-        setStep("located");
-        fetchNearbyStores(
-          DEFAULT_LOCATION.lat,
-          DEFAULT_LOCATION.lng,
-          radiusFilter
-        );
+        useDefaultLocation();
       },
       {
         enableHighAccuracy: false,
@@ -143,6 +160,26 @@ function NearbyStores() {
         maximumAge: 0,
       }
     );
+  }, [fetchNearbyStores, radiusFilter]);
+
+  // 첫 진입 → 위치 권한 모달 또는 자동 진행
+  useEffect(() => {
+    if (step === "initial") {
+      const consent = getCookie(LOCATION_CONSENT_COOKIE);
+      if (consent === "granted") {
+        setShowPermissionModal(false);
+        beginLocationLookup();
+      } else {
+        setShowPermissionModal(true);
+      }
+    }
+  }, [step, beginLocationLookup]);
+
+  // 위치 권한 허용
+  const handleAllowLocation = () => {
+    setCookie(LOCATION_CONSENT_COOKIE, "granted", 30);
+    setShowPermissionModal(false);
+    beginLocationLookup();
   };
 
   // 위치 권한 거부
@@ -154,18 +191,6 @@ function NearbyStores() {
   };
 
   // 주변 매장 조회
-  const fetchNearbyStores = async (lat, lng, radius) => {
-    try {
-      setIsLoading(true);
-      const data = await storeAPI.getNearbyStores(lat, lng, radius);
-      setStores(data.stores || data || []);
-    } catch (err) {
-      console.error("매장 검색 오류:", err);
-      setStores([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 반경 변경
   const handleRadiusChange = (newRadius) => {

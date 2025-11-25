@@ -13,42 +13,26 @@ import {
   TabsContent,
 } from "../../components/ui/tabs";
 
-import { Star, MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Modal from "../../components/Modal";
 import Navbar from "../../components/Navbar";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { ownerAPI } from "../../services/owner";
-
-// ---------------- Mock 가게 리스트 ----------------
-const mockStores = [
-  {
-    id: 1,
-    name: "홍대 중국집",
-    location: "서울 마포구",
-    rating: 4.8,
-    reviews: 85,
-    noShowRate: 2.5,
-    trustTemp: 88,
-  },
-  {
-    id: 2,
-    name: "이태원 마라탕",
-    location: "서울 용산구",
-    rating: 4.5,
-    reviews: 41,
-    noShowRate: 4.1,
-    trustTemp: 79,
-  },
-];
+import { businessAPI } from "../../services/business";
 
 function OwnerMyPage() {
   const { user } = useAuth();
   const ownerId = user?.ownerId;
+  const navigate = useNavigate();
 
   const [modalType, setModalType] = useState(null);
   const [ownerProfile, setOwnerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [businesses, setBusinesses] = useState([]);
+  const [businessLoading, setBusinessLoading] = useState(true);
+  const [businessError, setBusinessError] = useState(null);
 
   // 수정 폼 상태
   const [editForm, setEditForm] = useState({
@@ -85,6 +69,39 @@ function OwnerMyPage() {
     };
 
     loadProfile();
+  }, [ownerId]);
+
+  useEffect(() => {
+    if (!ownerId) {
+      setBusinessLoading(false);
+      setBusinesses([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchBusinesses = async () => {
+      try {
+        setBusinessLoading(true);
+        setBusinessError(null);
+        const data = await businessAPI.getBusinessesByOwner(ownerId);
+        if (!isMounted) return;
+        setBusinesses(data ?? []);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("비즈니스 조회 실패:", err);
+        setBusinessError("가게 정보를 불러오지 못했습니다.");
+      } finally {
+        if (!isMounted) return;
+        setBusinessLoading(false);
+      }
+    };
+
+    fetchBusinesses();
+
+    return () => {
+      isMounted = false;
+    };
   }, [ownerId]);
 
   // 정보 수정 제출
@@ -224,44 +241,94 @@ function OwnerMyPage() {
 
           {/* 내 가게 리스트 */}
           <TabsContent value="stores" className="space-y-4">
-            {mockStores.map((store) => (
-              <Card key={store.id} className="border-slate-200">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-bold">{store.name}</h3>
-                        <Badge className="bg-green-100 text-green-700">
-                          {store.rating}★
-                        </Badge>
+            {businessLoading ? (
+            <Card className="border-slate-200 bg-white">
+              <CardContent className="p-6 flex items-center gap-3">
+                <Loader2 className="h-5 w-5 text-slate-500 animate-spin" />
+                <span className="text-sm text-slate-500">가게를 불러오는 중입니다...</span>
+              </CardContent>
+            </Card>
+          ) : businessError ? (
+            <Card className="border-slate-200">
+              <CardContent className="p-6 text-center text-sm text-red-500">
+                {businessError}
+              </CardContent>
+            </Card>
+          ) : businesses.length === 0 ? (
+            <Card className="border-slate-200">
+              <CardContent className="p-6 text-center">
+                <div className="text-lg font-bold text-slate-900 mb-2">
+                  등록된 가게가 없습니다
+                </div>
+                <p className="text-sm text-slate-600 mb-4">
+                  가게를 등록하시면 마이페이지에서 바로 관리할 수 있어요.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/owner/register-business")}
+                  className="bg-green-50 text-green-600"
+                >
+                  가게 등록하기
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            businesses.map((business) => {
+              const rating =
+                business.averageRating != null
+                  ? Number(business.averageRating).toFixed(1)
+                  : "0.0";
+              const reviews = business.reviewCount ?? 0;
+              return (
+                <Card key={business.businessId} className="border-slate-200">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-bold">{business.businessName}</h3>
+                          <Badge
+                            className={`text-xs ${
+                              business.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {business.isActive ? "운영 중" : "비활성"}
+                          </Badge>
+                        </div>
+
+                        <p className="text-sm text-slate-600 flex items-center gap-1 mb-2">
+                          <MapPin size={16} className="text-slate-400" />
+                          {business.address || "주소 없음"}
+                        </p>
+
+                        <div className="flex gap-6 text-sm">
+                          <span>리뷰 {reviews}개</span>
+                          <span>{rating}★ 평균</span>
+                          <span>{business.category || "카테고리 없음"}</span>
+                        </div>
                       </div>
 
-                      <p className="text-sm text-slate-600 flex items-center gap-1 mb-2">
-                        <MapPin size={16} className="text-slate-400" />
-                        {store.location}
-                      </p>
-
-                      <div className="flex gap-6 text-sm">
-                        <span>리뷰 {store.reviews}개</span>
-                        <span>노쇼 {store.noShowRate}%</span>
-                        <span className="text-green-600 font-bold">
-                          온도 {store.trustTemp}°
-                        </span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/owner/reservations?businessId=${business.businessId}`)}
+                        >
+                          예약 관리
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/owner/menu-ocr?businessId=${business.businessId}`)}
+                        >
+                          통계 보기
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        가게 관리
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        통계 보기
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
           </TabsContent>
 
           {/* 설정 탭 */}

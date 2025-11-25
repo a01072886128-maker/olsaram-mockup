@@ -98,6 +98,16 @@ const Navbar = ({ userType = null }) => {
                   커뮤니티
                 </Link>
                 <Link
+                  to="/owner/my-page"
+                  className={`px-3 py-2 rounded-lg transition-colors ${
+                    isActive("/owner/my-page")
+                      ? "text-primary-green font-semibold"
+                      : "text-text-secondary hover:text-primary-green"
+                  }`}
+                >
+                  마이페이지
+                </Link>
+                <Link
                   to="/owner/register-business"
                   className="px-4 py-2 bg-primary-green text-white font-semibold rounded-lg hover:bg-dark-green transition-colors"
                 >
@@ -222,6 +232,13 @@ const Navbar = ({ userType = null }) => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   예약관리
+                </Link>
+                <Link
+                  to="/owner/my-page"
+                  className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  마이페이지
                 </Link>
                 <button
                   onClick={handleLogout}

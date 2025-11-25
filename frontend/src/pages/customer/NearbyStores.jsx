@@ -563,7 +563,7 @@ function NearbyStores() {
 
               {/* 오른쪽 리스트 */}
               <div
-                className="space-y-3"
+                className="flex flex-col gap-4 pr-1 py-4"
                 style={{ maxHeight: "500px", overflowY: "auto" }}
               >
                 {isLoading ? (
@@ -581,6 +581,7 @@ function NearbyStores() {
                   filteredStores.map((store, index) => (
                     <motion.div
                       key={store.id}
+                      className="w-full"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -588,19 +589,23 @@ function NearbyStores() {
                       {/* ⭐⭐ 여기만 추가됨 → 상세페이지 이동 가능 ⭐⭐ */}
                       <Link
                         to={`/customer/store/${store.id}`}
-                        className="block"
+                        className="block w-full"
                       >
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
-                          <CardContent className="p-4">
+                        <Card className="w-full hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
+                          <CardContent className="p-4 pt-5">
                             <div className="flex gap-3">
                               {/* 이미지 */}
                               <div className="relative flex-shrink-0">
-                                {store.imageUrl && (
+                                {store.imageUrl ? (
                                   <img
                                     src={store.imageUrl}
                                     alt={store.name}
                                     className="w-24 h-24 object-cover rounded-lg"
                                   />
+                                ) : (
+                                  <div className="w-24 h-24 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                                    이미지 준비중
+                                  </div>
                                 )}
 
                                 {store.noShowDiscount && (

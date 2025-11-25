@@ -36,7 +36,6 @@ import AdminMenuOCR from "./pages/admin/MenuOCR";
 
 // 고객 페이지
 import CustomerSearch from "./pages/customer/Search";
-import VoiceReservation from "./pages/customer/VoiceReservation";
 import GroupReservation from "./pages/customer/GroupReservation";
 import CustomerMyPage from "./pages/customer/MyPage.jsx";
 import NearbyStores from "./pages/customer/NearbyStores";
@@ -180,14 +179,6 @@ function App() {
           element={
             <RequireCustomerAuth>
               <NearbyStores />
-            </RequireCustomerAuth>
-          }
-        />
-        <Route
-          path="/customer/voice-reservation"
-          element={
-            <RequireCustomerAuth>
-              <VoiceReservation />
             </RequireCustomerAuth>
           }
         />

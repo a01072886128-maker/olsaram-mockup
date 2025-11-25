@@ -137,16 +137,6 @@ const Navbar = ({ userType = null }) => {
                   <span>내 주변 맛집</span>
                 </Link>
 
-                <Link
-                  to="/customer/voice-reservation"
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    isActive("/customer/voice-reservation")
-                      ? "text-primary-green font-semibold"
-                      : "text-text-secondary hover:text-primary-green"
-                  }`}
-                >
-                  음성 예약
-                </Link>
 
                 <Link
                   to="/customer/community"
@@ -258,13 +248,6 @@ const Navbar = ({ userType = null }) => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   내 주변 맛집
-                </Link>
-                <Link
-                  to="/customer/voice-reservation"
-                  className="px-4 py-2 rounded-lg text-text-secondary hover:bg-gray-50"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  음성 예약
                 </Link>
                 <Link
                   to="/customer/community"

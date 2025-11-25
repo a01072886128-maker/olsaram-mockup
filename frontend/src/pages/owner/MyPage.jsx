@@ -1,26 +1,15 @@
-import {
-  Card,
-  CardContent,
-} from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
-import { Progress } from "../../components/ui/progress";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "../../components/ui/tabs";
 
-import { MapPin, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Modal from "../../components/Modal";
 import Navbar from "../../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { ownerAPI } from "../../services/owner";
-import { businessAPI } from "../../services/business";
 
 function OwnerMyPage() {
   const { user } = useAuth();
@@ -30,10 +19,6 @@ function OwnerMyPage() {
   const [modalType, setModalType] = useState(null);
   const [ownerProfile, setOwnerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [businesses, setBusinesses] = useState([]);
-  const [businessLoading, setBusinessLoading] = useState(true);
-  const [businessError, setBusinessError] = useState(null);
-
   // 수정 폼 상태
   const [editForm, setEditForm] = useState({
     name: "",
@@ -69,39 +54,6 @@ function OwnerMyPage() {
     };
 
     loadProfile();
-  }, [ownerId]);
-
-  useEffect(() => {
-    if (!ownerId) {
-      setBusinessLoading(false);
-      setBusinesses([]);
-      return;
-    }
-
-    let isMounted = true;
-
-    const fetchBusinesses = async () => {
-      try {
-        setBusinessLoading(true);
-        setBusinessError(null);
-        const data = await businessAPI.getBusinessesByOwner(ownerId);
-        if (!isMounted) return;
-        setBusinesses(data ?? []);
-      } catch (err) {
-        if (!isMounted) return;
-        console.error("비즈니스 조회 실패:", err);
-        setBusinessError("가게 정보를 불러오지 못했습니다.");
-      } finally {
-        if (!isMounted) return;
-        setBusinessLoading(false);
-      }
-    };
-
-    fetchBusinesses();
-
-    return () => {
-      isMounted = false;
-    };
   }, [ownerId]);
 
   // 정보 수정 제출
@@ -148,7 +100,9 @@ function OwnerMyPage() {
       <div className="min-h-screen bg-slate-50">
         <Navbar userType="owner" />
         <div className="container mx-auto px-6 py-8">
-          <p className="text-center text-slate-500">프로필 정보를 불러올 수 없습니다.</p>
+          <p className="text-center text-slate-500">
+            프로필 정보를 불러올 수 없습니다.
+          </p>
         </div>
       </div>
     );
@@ -159,209 +113,82 @@ function OwnerMyPage() {
       <Navbar userType="owner" />
 
       {/* ------------------------------ Main ------------------------------ */}
-      <main className="container mx-auto px-6 py-8">
-        {/* 프로필 카드 */}
-        <Card className="mb-8 border-slate-200">
-          <CardContent className="p-8">
-            <div className="flex flex-col gap-6 md:flex-row md:items-start">
-              <Avatar className="h-24 w-24 bg-green-100">
-                <AvatarFallback className="text-3xl text-green-700 font-semibold">
-                  {ownerProfile.name?.[0] || "사"}
-                </AvatarFallback>
-              </Avatar>
-
-              <div className="flex-1">
-                <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <h2 className="text-3xl font-bold text-slate-900">
-                    {ownerProfile.name}
-                  </h2>
-                  <Badge className="bg-green-600 text-white">사업자</Badge>
-                  {ownerProfile.isVerified && (
-                    <Badge className="bg-blue-600 text-white">인증완료</Badge>
-                  )}
-                </div>
-
-                <p className="mb-2 text-slate-600">{ownerProfile.phone}</p>
-                {ownerProfile.email && (
-                  <p className="mb-4 text-sm text-slate-500">{ownerProfile.email}</p>
-                )}
-
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <div className="text-sm text-slate-500">구독 플랜</div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {ownerProfile.subscriptionPlan || "FREE"}
-                    </div>
+      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+        {/* 프로필 카드 (핵심 정보 중심) */}
+        <Card className="mb-6 border-slate-200 bg-white shadow-sm">
+          <CardContent className="px-6 py-5 md:px-8 md:py-6 space-y-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 bg-green-100">
+                  <AvatarFallback className="text-2xl text-green-700 font-semibold">
+                    {ownerProfile.name?.[0] || "사"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-semibold text-slate-900">
+                      {ownerProfile.name}
+                    </h2>
+                    <Badge className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                      사업자
+                    </Badge>
                   </div>
-
-                  <div>
-                    <div className="text-sm text-slate-500">등록 가게 수</div>
-                    <div className="text-2xl font-bold text-slate-900">
-                      {ownerProfile.totalBusinessCount || 0}개
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm text-slate-500">최대 가게 수</div>
-                    <div className="text-2xl font-bold text-slate-600">
-                      {ownerProfile.maxBusinessCount || 1}개
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm text-slate-500">가입일</div>
-                    <div className="text-lg font-medium text-slate-700">
-                      {ownerProfile.createdAt
-                        ? new Date(ownerProfile.createdAt).toLocaleDateString("ko-KR")
-                        : "-"}
-                    </div>
-                  </div>
+                  <p className="text-sm text-slate-500">
+                    {ownerProfile.phone}
+                    {ownerProfile.email ? ` · ${ownerProfile.email}` : ""}
+                  </p>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setModalType("edit")}
+                className="border-slate-300 text-slate-700 hover:border-slate-400"
+              >
+                내 정보 수정
+              </Button>
             </div>
 
-            {/* 사업자번호 표시 */}
-            <div className="mt-6 rounded-lg bg-slate-50 p-4">
-              <div className="text-sm font-medium text-slate-600 mb-1">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              <span>가입일:</span>
+              <span className="font-medium text-slate-900">
+                {ownerProfile.createdAt
+                  ? new Date(ownerProfile.createdAt).toLocaleDateString("ko-KR")
+                  : "-"}
+              </span>
+            </div>
+
+            <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <div className="text-xs font-semibold text-slate-500 mb-1">
                 사업자등록번호
               </div>
-              <div className="text-lg font-mono text-slate-900">
+              <div className="font-mono text-base text-slate-900">
                 {ownerProfile.businessNumber || "미등록"}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* ------------------------------ TABS ------------------------------ */}
-        <Tabs defaultValue="stores">
-          <TabsList className="mb-6 bg-white border">
-            <TabsTrigger value="stores">내 가게</TabsTrigger>
-            <TabsTrigger value="settings">설정</TabsTrigger>
-          </TabsList>
-
-          {/* 내 가게 리스트 */}
-          <TabsContent value="stores" className="space-y-4">
-            {businessLoading ? (
-            <Card className="border-slate-200 bg-white">
-              <CardContent className="p-6 flex items-center gap-3">
-                <Loader2 className="h-5 w-5 text-slate-500 animate-spin" />
-                <span className="text-sm text-slate-500">가게를 불러오는 중입니다...</span>
-              </CardContent>
-            </Card>
-          ) : businessError ? (
-            <Card className="border-slate-200">
-              <CardContent className="p-6 text-center text-sm text-red-500">
-                {businessError}
-              </CardContent>
-            </Card>
-          ) : businesses.length === 0 ? (
-            <Card className="border-slate-200">
-              <CardContent className="p-6 text-center">
-                <div className="text-lg font-bold text-slate-900 mb-2">
-                  등록된 가게가 없습니다
-                </div>
-                <p className="text-sm text-slate-600 mb-4">
-                  가게를 등록하시면 마이페이지에서 바로 관리할 수 있어요.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/owner/register-business")}
-                  className="bg-green-50 text-green-600"
-                >
-                  가게 등록하기
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            businesses.map((business) => {
-              const rating =
-                business.averageRating != null
-                  ? Number(business.averageRating).toFixed(1)
-                  : "0.0";
-              const reviews = business.reviewCount ?? 0;
-              return (
-                <Card key={business.businessId} className="border-slate-200">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-bold">{business.businessName}</h3>
-                          <Badge
-                            className={`text-xs ${
-                              business.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {business.isActive ? "운영 중" : "비활성"}
-                          </Badge>
-                        </div>
-
-                        <p className="text-sm text-slate-600 flex items-center gap-1 mb-2">
-                          <MapPin size={16} className="text-slate-400" />
-                          {business.address || "주소 없음"}
-                        </p>
-
-                        <div className="flex gap-6 text-sm">
-                          <span>리뷰 {reviews}개</span>
-                          <span>{rating}★ 평균</span>
-                          <span>{business.category || "카테고리 없음"}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/owner/reservations?businessId=${business.businessId}`)}
-                        >
-                          예약 관리
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/owner/menu-ocr?businessId=${business.businessId}`)}
-                        >
-                          통계 보기
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-          </TabsContent>
-
-          {/* 설정 탭 */}
-          <TabsContent value="settings">
-            <Card className="border-slate-200">
-              <CardContent className="p-6 space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setModalType("edit")}
-                >
-                  사업자 정보 수정
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setModalType("alert")}
-                >
-                  알림 설정
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-red-600 border-red-300 hover:bg-red-50"
-                  onClick={() => setModalType("withdraw")}
-                >
-                  회원 탈퇴
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* 간편 링크 섹션 */}
+        <Card className="border-slate-200">
+          <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm text-slate-500">
+                주요 관리 페이지로 이동하면 상세한 가게/예약 데이터를 확인할 수 있습니다.
+              </p>
+              <p className="text-lg font-semibold text-slate-900 mt-1">
+                내 가게 관리 바로가기
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/owner/my-businesses")}
+            >
+              내 가게 페이지 이동
+            </Button>
+          </CardContent>
+        </Card>
       </main>
 
       {/* ============ 사업자 정보 수정 모달 ============ */}
@@ -378,7 +205,9 @@ function OwnerMyPage() {
             <input
               type="text"
               value={editForm.name}
-              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, name: e.target.value })
+              }
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="사업자 이름"
               required
@@ -392,7 +221,9 @@ function OwnerMyPage() {
             <input
               type="tel"
               value={editForm.phone}
-              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, phone: e.target.value })
+              }
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="010-1234-5678"
               required
@@ -406,7 +237,9 @@ function OwnerMyPage() {
             <input
               type="email"
               value={editForm.email}
-              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, email: e.target.value })
+              }
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder="example@email.com"
             />

@@ -69,6 +69,99 @@ function FadeIn({ children, delay = 0 }) {
   );
 }
 
+function HeroSection({ navigate }) {
+  return (
+    <section className="relative min-h-[80vh] w-full overflow-hidden pt-16">
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        src="/videos/owner-smile.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="relative z-10">
+        <div className="container mx-auto px-4 py-12 md:py-24">
+          <div className="flex flex-col gap-10 md:flex-row md:items-center">
+            <div className="flex-1 space-y-6 text-white">
+              <FadeIn>
+                <span className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold tracking-wide uppercase bg-white/20 rounded-full">
+                  소상공인을 위한 약속지킴 플랫폼
+                </span>
+              </FadeIn>
+              <FadeIn delay={0.2}>
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                  약속을 지키는 사람들,
+                  <br />
+                  <span className="text-primary-green">올사람</span>
+                </h1>
+              </FadeIn>
+              <FadeIn delay={0.4}>
+                <p className="text-lg md:text-xl text-white/90 max-w-2xl">
+                  AI 기반 노쇼사기 탐지로 피해를 예방하고
+                  <br />
+                  신뢰 있는 예약 문화를 만듭니다.
+                </p>
+              </FadeIn>
+              <FadeIn delay={0.6}>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    className="px-8 h-14 text-lg bg-primary-green hover:bg-dark-green text-white"
+                    size="lg"
+                    onClick={() => {
+                      localStorage.clear();
+                      navigate("/auth/login");
+                    }}
+                  >
+                    지금 시작하기
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="px-6 h-14 border-white/70 text-white hover:border-white hover:bg-white/10"
+                    size="lg"
+                    onClick={() => {
+                      localStorage.clear();
+                      navigate("/auth/register");
+                    }}
+                  >
+                    무료 시작
+                  </Button>
+                </div>
+              </FadeIn>
+              <FadeIn delay={0.8}>
+                <div className="flex flex-wrap gap-6 text-sm text-white/80">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-primary-green" />
+                    <span>설치비 0원</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-primary-green" />
+                    <span>수수료 0원</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-primary-green" />
+                    <span>3분 만에 시작</span>
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+            <FadeIn delay={0.3}>
+              <div className="flex-1">
+                <div className="h-80 rounded-[32px] border border-white/30 bg-white/10 backdrop-blur-xl shadow-2xl flex items-center justify-center">
+                  <p className="text-white/70 text-xl md:text-2xl text-center">
+                    올사람 서비스 목업 또는 가이드 이미지가 위치합니다.
+                  </p>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Landing() {
   const navigate = useNavigate();
 
@@ -119,73 +212,7 @@ function Landing() {
         </div>
       </header>
 
-      {/* 섹션 1: Hero - 풀스크린 */}
-      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-lime-50 pt-16">
-        <div className="container mx-auto px-4 text-center">
-          <FadeIn>
-            <span className="inline-block px-4 py-2 bg-primary-green/10 text-primary-green text-base font-semibold rounded-full mb-6">
-              소상공인을 위한 약속지킴 플랫폼
-            </span>
-          </FadeIn>
-
-          <FadeIn delay={0.2}>
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-text-primary">
-              약속을 지키는 사람들,
-              <br />
-              <span className="text-primary-green">올사람</span>
-            </h1>
-          </FadeIn>
-
-          <FadeIn delay={0.4}>
-            <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto">
-              AI 기반 노쇼사기 탐지로 피해를 예방하고
-              <br />
-              신뢰 있는 예약 문화를 만듭니다
-            </p>
-          </FadeIn>
-
-          <FadeIn delay={0.6}>
-            <div className="flex justify-center mb-12">
-              <Button
-                size="lg"
-                className="text-lg px-12 h-16 bg-primary-green hover:bg-dark-green text-white"
-                onClick={() => {
-                  localStorage.clear();
-                  navigate("/auth/login");
-                }}
-              >
-                지금 시작하기
-              </Button>
-            </div>
-          </FadeIn>
-
-          <FadeIn delay={0.8}>
-            <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-primary-green" />
-                <span>설치비 0원</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-primary-green" />
-                <span>수수료 0원</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-primary-green" />
-                <span>3분 만에 시작</span>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* 스크롤 유도 */}
-          <Motion.div
-            className="mt-20"
-            animate={{ y: [0, 10, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          >
-            <div className="text-gray-400 text-2xl">↓</div>
-          </Motion.div>
-        </div>
-      </section>
+      <HeroSection navigate={navigate} />
 
       {/* 섹션 2: 문제 제시 - 통계 */}
       <section

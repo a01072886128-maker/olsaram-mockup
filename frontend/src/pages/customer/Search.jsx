@@ -41,6 +41,21 @@ const Search = () => {
   // 더미 맛집 데이터
   const restaurants = [
     {
+      id: 2,
+      name: '백년가게',
+      businessId: 2,  // owner2의 가게
+      category: '한식',
+      rating: 4.9,
+      reviewCount: 1250,
+      distance: '180m',
+      walkTime: '3분',
+      discount: '신뢰 고객 7% 할인',
+      tags: ['전통한식', '예약추천', '주차가능'],
+      imageUrl: '🏪',
+      priceRange: '₩₩₩',
+      openNow: true
+    },
+    {
       id: 1,
       name: '신라면옥',
       category: '중식',
@@ -55,7 +70,7 @@ const Search = () => {
       openNow: true
     },
     {
-      id: 2,
+      id: 3,
       name: '이태원 초밥',
       category: '일식',
       rating: 4.9,
@@ -69,7 +84,7 @@ const Search = () => {
       openNow: true
     },
     {
-      id: 3,
+      id: 4,
       name: '카페 봄날',
       category: '카페',
       rating: 4.5,
@@ -83,7 +98,7 @@ const Search = () => {
       openNow: true
     },
     {
-      id: 4,
+      id: 5,
       name: '정통 한우집',
       category: '한식',
       rating: 4.8,
@@ -97,7 +112,7 @@ const Search = () => {
       openNow: true
     },
     {
-      id: 5,
+      id: 6,
       name: '파스타 공방',
       category: '양식',
       rating: 4.6,

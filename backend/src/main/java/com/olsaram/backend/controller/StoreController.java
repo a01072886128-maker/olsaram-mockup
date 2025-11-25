@@ -146,4 +146,22 @@ public class StoreController {
             return ResponseEntity.status(500).body(response);
         }
     }
+
+    /**
+     * DB 현황 조회
+     * GET /api/stores/db-status
+     */
+    @GetMapping("/db-status")
+    public ResponseEntity<Map<String, Object>> getDbStatus() {
+        return ResponseEntity.ok(kakaoLocalService.getDbStatus());
+    }
+
+    /**
+     * 광주 동구 가게에 사장님 계정 생성 및 연결
+     * POST /api/stores/assign-owners
+     */
+    @PostMapping("/assign-owners")
+    public ResponseEntity<Map<String, Object>> assignOwners() {
+        return ResponseEntity.ok(kakaoLocalService.assignOwnersToBusinesses());
+    }
 }

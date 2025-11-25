@@ -150,13 +150,85 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("Reservation not found"));
 
-        if (StringUtils.hasText(request.getStatus()))
-            reservation.setStatus(ReservationStatus.valueOf(request.getStatus()));
+        // 기존 상태 저장 (변경 감지용)
+        ReservationStatus oldStatus = reservation.getStatus();
+        ReservationStatus newStatus = null;
+
+        // 상태 업데이트
+        if (StringUtils.hasText(request.getStatus())) {
+            newStatus = ReservationStatus.valueOf(request.getStatus());
+            reservation.setStatus(newStatus);
+        }
 
         if (StringUtils.hasText(request.getPaymentStatus()))
             reservation.setPaymentStatus(PaymentStatus.valueOf(request.getPaymentStatus()));
 
+        // ⭐ 노쇼 상태로 변경 시 고객 및 가게 통계 자동 업데이트
+        if (newStatus == ReservationStatus.NO_SHOW && oldStatus != ReservationStatus.NO_SHOW) {
+            updateCustomerAndBusinessOnNoShow(reservation);
+        }
+        // ⭐ 완료 상태로 변경 시 고객 예약 카운트 증가
+        else if (newStatus == ReservationStatus.COMPLETED && oldStatus != ReservationStatus.COMPLETED) {
+            updateCustomerAndBusinessOnComplete(reservation);
+        }
+
         return reservationRepository.save(reservation);
+    }
+
+    /**
+     * 노쇼 발생 시 고객 및 가게 통계 업데이트
+     */
+    private void updateCustomerAndBusinessOnNoShow(Reservation reservation) {
+        // 1. 고객 노쇼 카운트 증가
+        if (reservation.getMemberId() != null) {
+            customerRepository.findById(reservation.getMemberId()).ifPresent(customer -> {
+                int currentNoShowCount = customer.getNoShowCount() != null ? customer.getNoShowCount() : 0;
+                customer.setNoShowCount(currentNoShowCount + 1);
+
+                // 신뢰 점수 감소 (노쇼 1회당 -10점, 최소 0점)
+                int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
+                customer.setTrustScore(Math.max(0, currentTrustScore - 10));
+
+                customerRepository.save(customer);
+            });
+        }
+
+        // 2. 가게 노쇼 카운트 증가
+        if (reservation.getBusinessId() != null) {
+            businessRepository.findById(reservation.getBusinessId()).ifPresent(business -> {
+                int currentNoShowCount = business.getNoShowCount() != null ? business.getNoShowCount() : 0;
+                business.setNoShowCount(currentNoShowCount + 1);
+                businessRepository.save(business);
+            });
+        }
+    }
+
+    /**
+     * 예약 완료 시 고객 및 가게 통계 업데이트
+     */
+    private void updateCustomerAndBusinessOnComplete(Reservation reservation) {
+        // 1. 고객 예약 완료 카운트 증가
+        if (reservation.getMemberId() != null) {
+            customerRepository.findById(reservation.getMemberId()).ifPresent(customer -> {
+                int currentReservationCount = customer.getReservationCount() != null ? customer.getReservationCount() : 0;
+                customer.setReservationCount(currentReservationCount + 1);
+
+                // 신뢰 점수 증가 (정상 방문 1회당 +5점, 최대 100점)
+                int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
+                customer.setTrustScore(Math.min(100, currentTrustScore + 5));
+
+                customerRepository.save(customer);
+            });
+        }
+
+        // 2. 가게 완료 예약 카운트 증가
+        if (reservation.getBusinessId() != null) {
+            businessRepository.findById(reservation.getBusinessId()).ifPresent(business -> {
+                int currentCompletedCount = business.getCompletedReservations() != null ? business.getCompletedReservations() : 0;
+                business.setCompletedReservations(currentCompletedCount + 1);
+                businessRepository.save(business);
+            });
+        }
     }
 
     // -------------------------

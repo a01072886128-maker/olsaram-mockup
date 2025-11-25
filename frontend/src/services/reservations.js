@@ -91,6 +91,51 @@ export const reservationAPI = {
       paymentStatus: "REFUND",
     });
   },
+
+  // ⭐ 가게별 노쇼율 조회
+  async getNoShowRate(businessId) {
+    if (!businessId) {
+      throw new Error("businessId가 필요합니다.");
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/businesses/${businessId}/noshow-rate`,
+      {
+        headers: buildHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  // ⭐ 사장님의 모든 가게 노쇼율 조회
+  async getOwnerNoShowRates(ownerId) {
+    if (!ownerId) {
+      throw new Error("ownerId가 필요합니다.");
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/owners/${ownerId}/noshow-rate`,
+      {
+        headers: buildHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  // ⭐ 예약별 위험도 조회
+  async getReservationRisk(reservationId) {
+    if (!reservationId) {
+      throw new Error("reservationId가 필요합니다.");
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/reservations/${reservationId}/risk`,
+      {
+        headers: buildHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
 };
 
 export default reservationAPI;

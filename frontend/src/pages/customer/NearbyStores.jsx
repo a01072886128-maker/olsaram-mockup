@@ -77,7 +77,7 @@ function NearbyStores() {
   const [recentSearches, setRecentSearches] = useState([]);
 
   // UI 필터
-  const [radiusFilter, setRadiusFilter] = useState(800);
+  const [radiusFilter, setRadiusFilter] = useState(5000);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showTodayOnly, setShowTodayOnly] = useState(false);
   const [showRadiusDropdown, setShowRadiusDropdown] = useState(false);

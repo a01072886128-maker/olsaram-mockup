@@ -79,6 +79,118 @@ public class KakaoLocalService {
     }
 
     /**
+     * DB 현황 조회
+     */
+    public java.util.Map<String, Object> getDbStatus() {
+        java.util.Map<String, Object> status = new java.util.HashMap<>();
+
+        List<Business> allBusiness = businessRepository.findAll();
+        List<BusinessOwner> allOwners = businessOwnerRepository.findAll();
+
+        // 광주 동구 가게만 필터링
+        List<Business> dongguBusiness = allBusiness.stream()
+                .filter(b -> b.getAddress() != null && b.getAddress().contains("동구"))
+                .collect(java.util.stream.Collectors.toList());
+
+        // system_owner 제외한 사장님 목록
+        List<BusinessOwner> realOwners = allOwners.stream()
+                .filter(o -> !"system_owner".equals(o.getLoginId()))
+                .collect(java.util.stream.Collectors.toList());
+
+        status.put("totalBusinessCount", allBusiness.size());
+        status.put("dongguBusinessCount", dongguBusiness.size());
+        status.put("totalOwnerCount", allOwners.size());
+        status.put("realOwnerCount", realOwners.size());
+        status.put("existingOwners", realOwners.stream()
+                .map(o -> java.util.Map.of("ownerId", o.getOwnerId(), "loginId", o.getLoginId(), "name", o.getName()))
+                .collect(java.util.stream.Collectors.toList()));
+
+        return status;
+    }
+
+    /**
+     * 광주 동구 가게에 사장님 계정 생성 및 연결
+     */
+    @Transactional
+    public java.util.Map<String, Object> assignOwnersToBusinesses() {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+
+        // 광주 동구 가게만 필터링 (system_owner 소유)
+        BusinessOwner systemOwner = businessOwnerRepository.findByLoginId("system_owner").orElse(null);
+        if (systemOwner == null) {
+            result.put("success", false);
+            result.put("message", "system_owner를 찾을 수 없습니다.");
+            return result;
+        }
+
+        List<Business> dongguBusinesses = businessRepository.findAll().stream()
+                .filter(b -> b.getAddress() != null && b.getAddress().contains("동구"))
+                .filter(b -> b.getOwner() != null && b.getOwner().getOwnerId().equals(systemOwner.getOwnerId()))
+                .collect(java.util.stream.Collectors.toList());
+
+        int createdOwners = 0;
+        int linkedBusinesses = 0;
+        List<java.util.Map<String, Object>> ownerList = new java.util.ArrayList<>();
+
+        // 기존 owner 숫자 확인 (ownerN 형식)
+        int maxOwnerNum = businessOwnerRepository.findAll().stream()
+                .filter(o -> o.getLoginId().matches("owner\\d+"))
+                .map(o -> Integer.parseInt(o.getLoginId().replace("owner", "")))
+                .max(Integer::compareTo)
+                .orElse(0);
+
+        int ownerNum = maxOwnerNum + 1;
+
+        for (Business business : dongguBusinesses) {
+            String loginId = "owner" + ownerNum;
+            String ownerName = business.getBusinessName() + " 사장님";
+            String phone = String.format("010-%04d-%04d", ownerNum / 10000 + 1000, ownerNum % 10000);
+            String email = loginId + "@olsaram.com";
+            String bizNum = String.format("%03d-%02d-%05d", ownerNum / 100000, (ownerNum / 1000) % 100, ownerNum % 1000);
+
+            // 사장님 계정 생성
+            BusinessOwner newOwner = BusinessOwner.builder()
+                    .loginId(loginId)
+                    .password("1234")
+                    .name(ownerName)
+                    .phone(phone)
+                    .email(email)
+                    .businessNumber(bizNum)
+                    .isVerified(true)
+                    .subscriptionPlan("FREE")
+                    .maxBusinessCount(5)
+                    .totalBusinessCount(1)
+                    .totalRevenue(0L)
+                    .build();
+
+            BusinessOwner savedOwner = businessOwnerRepository.save(newOwner);
+            createdOwners++;
+
+            // 가게와 연결
+            business.setOwner(savedOwner);
+            businessRepository.save(business);
+            linkedBusinesses++;
+
+            ownerList.add(java.util.Map.of(
+                    "loginId", loginId,
+                    "password", "1234",
+                    "businessName", business.getBusinessName(),
+                    "address", business.getAddress()
+            ));
+
+            ownerNum++;
+        }
+
+        result.put("success", true);
+        result.put("createdOwners", createdOwners);
+        result.put("linkedBusinesses", linkedBusinesses);
+        result.put("ownerList", ownerList);
+        result.put("message", createdOwners + "개의 사장님 계정 생성 및 " + linkedBusinesses + "개의 가게 연결 완료");
+
+        return result;
+    }
+
+    /**
      * 중복 가게 데이터 삭제 (이름+주소 기준)
      */
     @Transactional

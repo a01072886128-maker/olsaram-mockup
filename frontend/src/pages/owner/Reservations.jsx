@@ -97,6 +97,43 @@ const getPaymentBadge = (paymentStatus) => {
 /* -------------------------------------------------------------
    위험도 색상 코드
 ------------------------------------------------------------- */
+const normalizeScore = (value) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return 100;
+  return Math.max(0, Math.min(100, parsed));
+};
+
+const getReservationTrustScore = (reservation) => {
+  if (!reservation) return 100;
+  const customerTrust = reservation?.customerData?.trustScore;
+  const fallbackScore = reservation?.trustScore ?? reservation?.riskScore;
+  const candidate = customerTrust ?? fallbackScore ?? 100;
+  return normalizeScore(candidate);
+};
+
+const getRiskLevelFromTrustScore = (score) => {
+  if (score >= 100) {
+    return "LOW";
+  }
+  if (score > 50) {
+    return "MEDIUM";
+  }
+  return "HIGH";
+};
+
+const normalizeNoShowPercentage = (value) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return 0;
+  return Math.max(0, Math.min(100, parsed));
+};
+
+const getNoShowRiskLevel = (percentage) => {
+  const normalized = normalizeNoShowPercentage(percentage);
+  if (normalized <= 30) return "LOW";
+  if (normalized <= 50) return "MEDIUM";
+  return "HIGH";
+};
+
 const getRiskColor = (level) => {
   switch (level) {
     case "LOW":
@@ -141,35 +178,64 @@ const NoShowSummary = ({ noShowRates, loading }) => {
 
   // 첫 번째 가게의 노쇼율 (한 사장님이 여러 가게를 가진 경우 추후 확장)
   const rate = noShowRates[0];
+  const noShowPct = normalizeNoShowPercentage(rate.noShowPercentage);
+  const completedCount = rate.completedCount ?? 0;
+  const totalReservations = rate.totalReservations ?? 0;
+  const completedRate = totalReservations
+    ? Math.min(100, (completedCount / totalReservations) * 100)
+    : 0;
+  const visitRate = Math.max(0, 100 - noShowPct);
+  const riskLevel = getNoShowRiskLevel(noShowPct);
+  const riskColor = getRiskColor(riskLevel);
+  const riskLabelText = getRiskLabel(riskLevel);
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-6">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">
-          📊 {rate.businessName} - 노쇼율 통계
-        </h3>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: riskColor }}
+          />
+          <h3 className="text-lg font-semibold text-gray-900">
+            📊 {rate.businessName ?? "가게"} - 노쇼율 통계
+          </h3>
+        </div>
+        <span
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold border"
+          style={{ borderColor: riskColor, color: riskColor }}
+        >
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: riskColor }}
+          />
+          {riskLabelText}
+        </span>
       </div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="text-center bg-white rounded-lg p-4">
-          <div className="text-3xl font-bold text-gray-900">{rate.totalReservations}건</div>
-          <div className="text-sm text-gray-500 mt-1">총 예약</div>
-        </div>
-        <div className="text-center bg-white rounded-lg p-4">
-          <div className="text-3xl font-bold text-emerald-600">{rate.completedCount}건</div>
-          <div className="text-sm text-gray-500 mt-1">정상 완료</div>
-        </div>
-        <div className="text-center bg-white rounded-lg p-4">
-          <div className="text-3xl font-bold text-red-600">{rate.noShowCount}건</div>
-          <div className="text-sm text-gray-500 mt-1">노쇼</div>
-        </div>
-        <div className="text-center bg-white rounded-lg p-4">
-          <div className="text-3xl font-bold text-blue-600">
-            {rate.noShowPercentage.toFixed(1)}%
+          <div className="text-4xl font-bold text-red-600">
+            {noShowPct.toFixed(1)}%
           </div>
           <div className="text-sm text-gray-500 mt-1">노쇼율</div>
         </div>
+        <div className="text-center bg-white rounded-lg p-4">
+          <div className="text-4xl font-bold text-emerald-600">
+            {completedRate.toFixed(1)}%
+          </div>
+          <div className="text-sm text-gray-500 mt-1">완료율</div>
+        </div>
+        <div className="text-center bg-white rounded-lg p-4">
+          <div className="text-4xl font-bold text-blue-600">
+            {visitRate.toFixed(1)}%
+          </div>
+          <div className="text-sm text-gray-500 mt-1">예상 방문율</div>
+        </div>
       </div>
+      <p className="text-sm text-gray-500 mt-4">
+        총 예약 {totalReservations.toLocaleString("ko-KR")}건 기준 · 노쇼율 {noShowPct.toFixed(1)}%은{" "}
+        {riskLabelText} 단계(0~30% 안전, 30~50% 주의, 50% 이상 위험)입니다.
+      </p>
     </div>
   );
 };
@@ -184,13 +250,12 @@ const ReservationCard = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
 
-  // 백엔드에서 계산된 위험도 사용
-  const riskScore = reservation.riskScore || 100;
-  const riskLevel = reservation.riskLevel || "LOW";
+  const customerData = reservation.customerData || {};
   const suspiciousPatterns = reservation.suspiciousPatterns || [];
   const autoActions = reservation.autoActions || [];
-  const customerData = reservation.customerData || {};
 
+  const trustScore = getReservationTrustScore(reservation);
+  const riskLevel = getRiskLevelFromTrustScore(trustScore);
   const riskColor = getRiskColor(riskLevel);
   const riskLabelText = getRiskLabel(riskLevel);
 
@@ -198,7 +263,7 @@ const ReservationCard = ({
 
   const isConfirmed = reservation.status?.toUpperCase() === "CONFIRMED";
   const isCancelled = reservation.status?.toUpperCase() === "CANCELED";
-  const isVIP = riskScore >= 90;
+  const isVIP = trustScore >= 90;
 
   return (
     <motion.div
@@ -261,7 +326,7 @@ const ReservationCard = ({
           {reservation.people || 0}명
         </span>
         <span style={{ color: riskColor }} className="font-medium">
-          위험도: {riskScore}점 ({riskLabelText})
+          위험도: {trustScore}점 ({riskLabelText})
         </span>
       </div>
 
@@ -354,7 +419,7 @@ const ReservationCard = ({
                   }}
                 >
                   <Phone className="w-4 h-4 mr-2" />
-                  📞 전화하기
+                  전화하기
                 </Button>
 
                 {!isConfirmed && !isCancelled && (
@@ -368,7 +433,7 @@ const ReservationCard = ({
                       }}
                     >
                       <CheckCircle2 className="w-4 h-4 mr-2" />
-                      ✅ 예약확정
+                      예약확정
                     </Button>
 
                     {riskLevel === "HIGH" && (
@@ -385,7 +450,7 @@ const ReservationCard = ({
                         }}
                       >
                         <XCircle className="w-4 h-4 mr-2" />
-                        ❌ 예약취소
+                        예약취소
                       </Button>
                     )}
                   </>
@@ -405,7 +470,7 @@ const ReservationCard = ({
                       }}
                     >
                       <CheckCircle2 className="w-4 h-4 mr-2" />
-                      ✅ 방문완료
+                      방문완료
                     </Button>
 
                     <Button
@@ -420,22 +485,10 @@ const ReservationCard = ({
                       }}
                     >
                       <UserX className="w-4 h-4 mr-2" />
-                      🚫 노쇼처리
+                      노쇼처리
                     </Button>
                   </>
                 )}
-
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    alert("신뢰 고객으로 등록되었습니다.");
-                  }}
-                >
-                  <Star className="w-4 h-4 mr-2" />
-                  ⭐ 신뢰고객
-                </Button>
               </div>
             </div>
           </motion.div>
@@ -546,19 +599,22 @@ function Reservations() {
 
       // ⭐ 노쇼 또는 완료 처리 시 전체 데이터 새로고침 (통계 업데이트 반영)
       if (updates.status === "NO_SHOW" || updates.status === "COMPLETED") {
-        // 예약 목록 새로고침
-        const reservationData = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
-        setReservations(Array.isArray(reservationData) ? reservationData : []);
+        try {
+          // 예약 목록 새로고침
+          const reservationData = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
+          setReservations(Array.isArray(reservationData) ? reservationData : []);
 
-        // 노쇼율 통계 새로고침
-        const noShowData = await reservationAPI.getOwnerNoShowRates(ownerId);
-        setNoShowRates(Array.isArray(noShowData) ? noShowData : []);
+          // 노쇼율 통계 새로고침
+          const noShowData = await reservationAPI.getOwnerNoShowRates(ownerId);
+          setNoShowRates(Array.isArray(noShowData) ? noShowData : []);
+        } catch (refreshError) {
+          console.error("예약 정보 새로고침 실패:", refreshError);
+        }
 
-        // 성공 메시지
         if (updates.status === "NO_SHOW") {
-          alert("노쇼 처리되었습니다. 고객의 신뢰도가 감소했습니다.");
+          alert("노쇼처리 되었습니다.");
         } else if (updates.status === "COMPLETED") {
-          alert("방문 완료 처리되었습니다. 고객의 신뢰도가 증가했습니다.");
+          alert("방문완료 처리되었습니다.");
         }
       } else {
         // 일반 상태 변경은 로컬 업데이트만
@@ -628,8 +684,8 @@ function Reservations() {
         }
 
         // 2차: 위험도 높은 순 (점수가 낮을수록 위험)
-        const scoreA = a.riskScore || 100;
-        const scoreB = b.riskScore || 100;
+        const scoreA = getReservationTrustScore(a);
+        const scoreB = getReservationTrustScore(b);
         return scoreA - scoreB;
       });
     },

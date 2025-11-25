@@ -17,14 +17,24 @@ import java.util.stream.Collectors;
 @Configuration
 public class CorsConfig {
 
+    private static final List<String> DEFAULT_ALLOWED_ORIGINS = List.of(
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175"
+    );
+
     private final List<String> allowedOrigins;
 
     public CorsConfig(@Value("${spring.cors.allowed-origins}") String allowedOriginsProperty) {
         String propertyValue = allowedOriginsProperty == null ? "" : allowedOriginsProperty;
-        this.allowedOrigins = Arrays.stream(propertyValue.split(","))
+        List<String> parsed = Arrays.stream(propertyValue.split(","))
             .map(String::trim)
             .filter(value -> !value.isEmpty())
             .collect(Collectors.toList());
+        this.allowedOrigins = parsed.isEmpty() ? DEFAULT_ALLOWED_ORIGINS : parsed;
     }
 
     @Bean

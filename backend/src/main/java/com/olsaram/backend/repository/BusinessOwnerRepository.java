@@ -15,4 +15,9 @@ public interface BusinessOwnerRepository extends JpaRepository<BusinessOwner, Lo
     boolean existsByBusinessNumber(String businessNumber);
     boolean existsByPhone(String phone);
     boolean existsByEmail(String email);
+
+    // 정보 수정 시 중복 체크 (자기 자신 제외)
+    boolean existsByPhoneAndOwnerIdNot(String phone, Long ownerId);
+    boolean existsByEmailAndOwnerIdNot(String email, Long ownerId);
+    boolean existsByBusinessNumberAndOwnerIdNot(String businessNumber, Long ownerId);
 }

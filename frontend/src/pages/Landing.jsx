@@ -80,34 +80,34 @@ function HeroSection({ navigate }) {
         loop
         playsInline
       />
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-black/30" />
       <div className="relative z-10">
         <div className="container mx-auto px-4 py-12 md:py-24">
           <div className="flex flex-col gap-10 md:flex-row md:items-center">
-            <div className="flex-1 space-y-6 text-white">
+            <div className="flex-1">
               <FadeIn>
-                <span className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold tracking-wide uppercase bg-white/20 rounded-full">
+                <span className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold tracking-wide uppercase text-white/80 rounded-full border border-white/30">
                   소상공인을 위한 약속지킴 플랫폼
                 </span>
               </FadeIn>
               <FadeIn delay={0.2}>
-                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                  약속을 지키는 사람들,
-                  <br />
-                  <span className="text-primary-green">올사람</span>
-                </h1>
-              </FadeIn>
-              <FadeIn delay={0.4}>
-                <p className="text-lg md:text-xl text-white/90 max-w-2xl">
-                  AI 기반 노쇼사기 탐지로 피해를 예방하고
-                  <br />
-                  신뢰 있는 예약 문화를 만듭니다.
-                </p>
+                <div className="space-y-5 max-w-3xl mt-6">
+                  <h1 className="text-4xl md:text-6xl font-black leading-tight text-white" style={{ textShadow: "0 4px 20px rgba(0,0,0,0.7)" }}>
+                    약속을 지키는 사람들,
+                    <br />
+                    <span className="text-primary-green font-black">올사람</span>
+                  </h1>
+                  <p className="text-lg md:text-xl text-white/90 leading-relaxed">
+                    AI 기반 노쇼사기 탐지로 피해를 예방하고
+                    <br />
+                    신뢰 있는 예약 문화를 만듭니다.
+                  </p>
+                </div>
               </FadeIn>
               <FadeIn delay={0.6}>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-4 mt-6">
                   <Button
-                    className="px-8 h-14 text-lg bg-primary-green hover:bg-dark-green text-white"
+                    className="px-8 h-14 text-lg bg-primary-green hover:bg-dark-green text-white shadow-[0_6px_20px_rgba(76,175,80,0.4)] transition"
                     size="lg"
                     onClick={() => {
                       localStorage.clear();
@@ -130,31 +130,21 @@ function HeroSection({ navigate }) {
                 </div>
               </FadeIn>
               <FadeIn delay={0.8}>
-                <div className="flex flex-wrap gap-6 text-sm text-white/80">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-primary-green" />
-                    <span>설치비 0원</span>
+                  <div className="flex flex-wrap gap-3 text-sm text-white/90">
+                    {["설치비 0원", "수수료 0원", "3분 만에 시작"].map(
+                      (label) => (
+                        <span
+                          key={label}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                        >
+                          <CheckCircle className="w-5 h-5 text-primary-green" />
+                          {label}
+                        </span>
+                      )
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-primary-green" />
-                    <span>수수료 0원</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-primary-green" />
-                    <span>3분 만에 시작</span>
-                  </div>
-                </div>
               </FadeIn>
             </div>
-            <FadeIn delay={0.3}>
-              <div className="flex-1">
-                <div className="h-80 rounded-[32px] border border-white/30 bg-white/10 backdrop-blur-xl shadow-2xl flex items-center justify-center">
-                  <p className="text-white/70 text-xl md:text-2xl text-center">
-                    올사람 서비스 목업 또는 가이드 이미지가 위치합니다.
-                  </p>
-                </div>
-              </div>
-            </FadeIn>
           </div>
         </div>
       </div>
@@ -183,9 +173,9 @@ function Landing() {
   return (
     <div className="min-h-screen">
       {/* 네비게이션 - 고정 */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b z-50">
+      <header className="fixed top-0 left-0 right-0 bg-black/40 backdrop-blur-md border-b border-white/20 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-text-primary">올사람</h1>
+          <h1 className="text-2xl font-bold text-white">올사람</h1>
 
           <div className="flex gap-3">
             <Button
@@ -195,12 +185,14 @@ function Landing() {
                 localStorage.clear();
                 window.location.href = "/auth/login";
               }}
+              className="text-white border border-white/90 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition"
+              style={{ backdropFilter: "blur(5px)" }}
             >
               로그인
             </Button>
             <Button
               size="sm"
-              className="bg-primary-green hover:bg-dark-green text-white"
+              className="bg-primary-green hover:bg-dark-green text-white shadow-[0_4px_16px_rgba(76,175,80,0.6)] transition-transform duration-200 hover:-translate-y-0.5"
               onClick={() => {
                 localStorage.clear();
                 navigate("/auth/register");

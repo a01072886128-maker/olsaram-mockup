@@ -70,7 +70,34 @@ public class ReservationController {
             @PathVariable Long id,
             @RequestBody ReservationStatusUpdateRequest request
     ) {
-        return reservationService.updateReservationStatus(id, request);
+        try {
+            System.out.println("=== 예약 상태 업데이트 요청 ===");
+            System.out.println("예약 ID: " + id);
+            System.out.println("요청 상태: " + request.getStatus());
+            System.out.println("요청 결제 상태: " + request.getPaymentStatus());
+            
+            Reservation result = reservationService.updateReservationStatus(id, request);
+            
+            System.out.println("=== 예약 상태 업데이트 성공 ===");
+            System.out.println("업데이트된 예약 ID: " + result.getId());
+            System.out.println("업데이트된 상태: " + result.getStatus());
+            
+            return result;
+        } catch (RuntimeException e) {
+            System.err.println("=== 예약 상태 업데이트 실패 ===");
+            System.err.println("예약 ID: " + id);
+            System.err.println("에러 메시지: " + e.getMessage());
+            e.printStackTrace();
+            // 더 자세한 에러 메시지 반환
+            throw new RuntimeException("예약 상태 업데이트 실패: " + e.getMessage(), e);
+        } catch (Exception e) {
+            System.err.println("=== 예약 상태 업데이트 예외 발생 ===");
+            System.err.println("예약 ID: " + id);
+            System.err.println("예외 타입: " + e.getClass().getName());
+            System.err.println("에러 메시지: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("예약 상태 업데이트 중 예외 발생: " + e.getMessage(), e);
+        }
     }
 
     @DeleteMapping("/reservations/{id}")

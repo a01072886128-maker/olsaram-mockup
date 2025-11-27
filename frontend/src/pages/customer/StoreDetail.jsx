@@ -95,7 +95,7 @@ export default function StoreDetail() {
     try {
       await storeAPI.fullPayReservation(data);
       alert("예약 및 결제가 완료되었습니다!");
-      navigate("/customer/mypage");
+      navigate("/customer/nearby");
     } catch (err) {
       alert("예약/결제 오류: " + err.message);
       console.error(err);

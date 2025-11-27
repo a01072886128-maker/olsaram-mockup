@@ -146,33 +146,86 @@ public class ReservationService {
     // STATUS UPDATE (부분 업데이트)
     // -------------------------
     public Reservation updateReservationStatus(Long reservationId, ReservationStatusUpdateRequest request) {
+        try {
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new RuntimeException("Reservation not found (id=" + reservationId + ")"));
 
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+            // 기존 상태 저장 (변경 감지용) - null 안전 처리
+            ReservationStatus oldStatus = reservation.getStatus();
+            ReservationStatus newStatus = null;
 
-        // 기존 상태 저장 (변경 감지용)
-        ReservationStatus oldStatus = reservation.getStatus();
-        ReservationStatus newStatus = null;
+            boolean isNoShowRequest = false;
 
-        // 상태 업데이트
-        if (StringUtils.hasText(request.getStatus())) {
-            newStatus = ReservationStatus.valueOf(request.getStatus());
-            reservation.setStatus(newStatus);
+            // 상태 업데이트
+            if (StringUtils.hasText(request.getStatus())) {
+                try {
+                    String statusStr = request.getStatus().toUpperCase().trim();
+
+                    // ⚠️ 현재 DB enum 컬럼에는 NO_SHOW 값이 없어서 저장 시 에러가 발생한다.
+                    // 프론트에서 NO_SHOW를 보내더라도 내부적으로는 CANCELED로 저장하고
+                    // 노쇼 통계는 별도로 업데이트한다.
+                    if ("NO_SHOW".equals(statusStr)) {
+                        newStatus = ReservationStatus.CANCELED;
+                        isNoShowRequest = true;
+                    } else {
+                        newStatus = ReservationStatus.valueOf(statusStr);
+                    }
+
+                    reservation.setStatus(newStatus);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid reservation status: " + request.getStatus() + ". Valid values: PENDING, CONFIRMED, CANCELED, NO_SHOW, COMPLETED", e);
+                }
+            }
+
+            if (StringUtils.hasText(request.getPaymentStatus())) {
+                try {
+                    String paymentStatusStr = request.getPaymentStatus().toUpperCase().trim();
+                    reservation.setPaymentStatus(PaymentStatus.valueOf(paymentStatusStr));
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid payment status: " + request.getPaymentStatus(), e);
+                }
+            }
+
+            // 예약 상태 저장 (통계 업데이트 전에 먼저 저장)
+            Reservation savedReservation = reservationRepository.save(reservation);
+
+            // ⭐ 노쇼 상태로 변경 시 고객 및 가게 통계 자동 업데이트
+            // oldStatus가 null이거나 NO_SHOW가 아닌 경우에만 처리
+            if (isNoShowRequest) {
+                boolean shouldUpdate = (oldStatus == null || oldStatus != ReservationStatus.NO_SHOW);
+                if (shouldUpdate) {
+                    try {
+                        updateCustomerAndBusinessOnNoShow(savedReservation);
+                    } catch (Exception e) {
+                        // 통계 업데이트 실패해도 예약 상태는 이미 변경됨
+                        System.err.println("Failed to update customer/business stats on NO_SHOW: " + e.getMessage());
+                        e.printStackTrace();
+                        // 예외를 다시 throw하지 않음 - 예약 상태 변경은 성공한 것으로 간주
+                    }
+                }
+            }
+            // ⭐ 완료 상태로 변경 시 고객 예약 카운트 증가
+            // oldStatus가 null이거나 COMPLETED가 아닌 경우에만 처리
+            else if (newStatus != null && newStatus == ReservationStatus.COMPLETED) {
+                boolean shouldUpdate = (oldStatus == null || oldStatus != ReservationStatus.COMPLETED);
+                if (shouldUpdate) {
+                    try {
+                        updateCustomerAndBusinessOnComplete(savedReservation);
+                    } catch (Exception e) {
+                        // 통계 업데이트 실패해도 예약 상태는 이미 변경됨
+                        System.err.println("Failed to update customer/business stats on COMPLETED: " + e.getMessage());
+                        e.printStackTrace();
+                        // 예외를 다시 throw하지 않음 - 예약 상태 변경은 성공한 것으로 간주
+                    }
+                }
+            }
+
+            return savedReservation;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update reservation status: " + e.getMessage(), e);
         }
-
-        if (StringUtils.hasText(request.getPaymentStatus()))
-            reservation.setPaymentStatus(PaymentStatus.valueOf(request.getPaymentStatus()));
-
-        // ⭐ 노쇼 상태로 변경 시 고객 및 가게 통계 자동 업데이트
-        if (newStatus == ReservationStatus.NO_SHOW && oldStatus != ReservationStatus.NO_SHOW) {
-            updateCustomerAndBusinessOnNoShow(reservation);
-        }
-        // ⭐ 완료 상태로 변경 시 고객 예약 카운트 증가
-        else if (newStatus == ReservationStatus.COMPLETED && oldStatus != ReservationStatus.COMPLETED) {
-            updateCustomerAndBusinessOnComplete(reservation);
-        }
-
-        return reservationRepository.save(reservation);
     }
 
     /**
@@ -181,25 +234,49 @@ public class ReservationService {
     private void updateCustomerAndBusinessOnNoShow(Reservation reservation) {
         // 1. 고객 노쇼 카운트 증가
         if (reservation.getMemberId() != null) {
-            customerRepository.findById(reservation.getMemberId()).ifPresent(customer -> {
-                int currentNoShowCount = customer.getNoShowCount() != null ? customer.getNoShowCount() : 0;
-                customer.setNoShowCount(currentNoShowCount + 1);
+            try {
+                customerRepository.findById(reservation.getMemberId()).ifPresent(customer -> {
+                    try {
+                        int currentNoShowCount = customer.getNoShowCount() != null ? customer.getNoShowCount() : 0;
+                        customer.setNoShowCount(currentNoShowCount + 1);
 
-                // 신뢰 점수 감소 (노쇼 1회당 -10점, 최소 0점)
-                int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
-                customer.setTrustScore(Math.max(0, currentTrustScore - 10));
+                        // 신뢰 점수 감소 (노쇼 1회당 -10점, 최소 0점)
+                        int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
+                        customer.setTrustScore(Math.max(0, currentTrustScore - 10));
 
-                customerRepository.save(customer);
-            });
+                        customerRepository.save(customer);
+                    } catch (Exception e) {
+                        System.err.println("Failed to save customer stats on NO_SHOW: " + e.getMessage());
+                        e.printStackTrace();
+                        // 저장 실패해도 계속 진행
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Failed to find customer on NO_SHOW: " + e.getMessage());
+                e.printStackTrace();
+                // 고객을 찾지 못해도 계속 진행
+            }
         }
 
         // 2. 가게 노쇼 카운트 증가
         if (reservation.getBusinessId() != null) {
-            businessRepository.findById(reservation.getBusinessId()).ifPresent(business -> {
-                int currentNoShowCount = business.getNoShowCount() != null ? business.getNoShowCount() : 0;
-                business.setNoShowCount(currentNoShowCount + 1);
-                businessRepository.save(business);
-            });
+            try {
+                businessRepository.findById(reservation.getBusinessId()).ifPresent(business -> {
+                    try {
+                        int currentNoShowCount = business.getNoShowCount() != null ? business.getNoShowCount() : 0;
+                        business.setNoShowCount(currentNoShowCount + 1);
+                        businessRepository.save(business);
+                    } catch (Exception e) {
+                        System.err.println("Failed to save business stats on NO_SHOW: " + e.getMessage());
+                        e.printStackTrace();
+                        // 저장 실패해도 계속 진행
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Failed to find business on NO_SHOW: " + e.getMessage());
+                e.printStackTrace();
+                // 가게를 찾지 못해도 계속 진행
+            }
         }
     }
 
@@ -209,25 +286,49 @@ public class ReservationService {
     private void updateCustomerAndBusinessOnComplete(Reservation reservation) {
         // 1. 고객 예약 완료 카운트 증가
         if (reservation.getMemberId() != null) {
-            customerRepository.findById(reservation.getMemberId()).ifPresent(customer -> {
-                int currentReservationCount = customer.getReservationCount() != null ? customer.getReservationCount() : 0;
-                customer.setReservationCount(currentReservationCount + 1);
+            try {
+                customerRepository.findById(reservation.getMemberId()).ifPresent(customer -> {
+                    try {
+                        int currentReservationCount = customer.getReservationCount() != null ? customer.getReservationCount() : 0;
+                        customer.setReservationCount(currentReservationCount + 1);
 
-                // 신뢰 점수 증가 (정상 방문 1회당 +5점, 최대 100점)
-                int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
-                customer.setTrustScore(Math.min(100, currentTrustScore + 5));
+                        // 신뢰 점수 증가 (정상 방문 1회당 +5점, 최대 100점)
+                        int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
+                        customer.setTrustScore(Math.min(100, currentTrustScore + 5));
 
-                customerRepository.save(customer);
-            });
+                        customerRepository.save(customer);
+                    } catch (Exception e) {
+                        System.err.println("Failed to save customer stats on COMPLETED: " + e.getMessage());
+                        e.printStackTrace();
+                        // 저장 실패해도 계속 진행
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Failed to find customer on COMPLETED: " + e.getMessage());
+                e.printStackTrace();
+                // 고객을 찾지 못해도 계속 진행
+            }
         }
 
         // 2. 가게 완료 예약 카운트 증가
         if (reservation.getBusinessId() != null) {
-            businessRepository.findById(reservation.getBusinessId()).ifPresent(business -> {
-                int currentCompletedCount = business.getCompletedReservations() != null ? business.getCompletedReservations() : 0;
-                business.setCompletedReservations(currentCompletedCount + 1);
-                businessRepository.save(business);
-            });
+            try {
+                businessRepository.findById(reservation.getBusinessId()).ifPresent(business -> {
+                    try {
+                        int currentCompletedCount = business.getCompletedReservations() != null ? business.getCompletedReservations() : 0;
+                        business.setCompletedReservations(currentCompletedCount + 1);
+                        businessRepository.save(business);
+                    } catch (Exception e) {
+                        System.err.println("Failed to save business stats on COMPLETED: " + e.getMessage());
+                        e.printStackTrace();
+                        // 저장 실패해도 계속 진행
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Failed to find business on COMPLETED: " + e.getMessage());
+                e.printStackTrace();
+                // 가게를 찾지 못해도 계속 진행
+            }
         }
     }
 

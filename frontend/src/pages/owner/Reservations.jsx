@@ -514,42 +514,37 @@ function Reservations() {
   const [selectedDate, setSelectedDate] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  /* ---------------- 예약 불러오기 (위험도 포함) ---------------- */
-  useEffect(() => {
+  /* ---------------- 예약 불러오기 (위험도 포함 → 실패 시 기본) ---------------- */
+  const loadReservations = useCallback(async () => {
     if (!ownerId) {
       setReservations([]);
       setError("사장님 정보를 확인할 수 없습니다.");
       setLoading(false);
       return;
     }
+    setLoading(true);
+    setError(null);
 
-    let alive = true;
-
-    const load = async () => {
-      setLoading(true);
-
+    try {
+      let data = [];
       try {
-        // ⭐ 백엔드에서 위험도가 계산된 예약 목록 조회
-        const data = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
-
-        if (!alive) return;
-
-        const reservationList = Array.isArray(data) ? data : [];
-        setReservations(reservationList);
-      } catch (err) {
-        if (!alive) return;
-        setError(err?.message || "예약 정보를 불러오지 못했습니다.");
-      } finally {
-        if (alive) setLoading(false);
+        data = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
+      } catch (riskErr) {
+        console.warn("with-risk 예약 조회 실패, 기본 조회로 대체:", riskErr);
+        data = await reservationAPI.getOwnerReservations(ownerId);
       }
-    };
-
-    load();
-
-    return () => {
-      alive = false;
-    };
+      const reservationList = Array.isArray(data) ? data : [];
+      setReservations(reservationList);
+    } catch (err) {
+      setError(err?.message || "예약 정보를 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
   }, [ownerId]);
+
+  useEffect(() => {
+    loadReservations();
+  }, [loadReservations]);
 
   /* ---------------- 노쇼율 불러오기 ---------------- */
   useEffect(() => {
@@ -600,13 +595,13 @@ function Reservations() {
       // ⭐ 노쇼 또는 완료 처리 시 전체 데이터 새로고침 (통계 업데이트 반영)
       if (updates.status === "NO_SHOW" || updates.status === "COMPLETED") {
         try {
-          // 예약 목록 새로고침
-          const reservationData = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
-          setReservations(Array.isArray(reservationData) ? reservationData : []);
-
-          // 노쇼율 통계 새로고침
-          const noShowData = await reservationAPI.getOwnerNoShowRates(ownerId);
-          setNoShowRates(Array.isArray(noShowData) ? noShowData : []);
+          await loadReservations();
+          try {
+            const noShowData = await reservationAPI.getOwnerNoShowRates(ownerId);
+            setNoShowRates(Array.isArray(noShowData) ? noShowData : []);
+          } catch (refreshError) {
+            console.error("노쇼율 조회 실패:", refreshError);
+          }
         } catch (refreshError) {
           console.error("예약 정보 새로고침 실패:", refreshError);
         }

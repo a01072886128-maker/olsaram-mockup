@@ -1,15 +1,19 @@
-import { Card, CardContent } from "../../components/ui/card";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
-
-import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import Modal from "../../components/Modal";
-import Navbar from "../../components/Navbar";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { ownerAPI } from "../../services/owner";
+import Modal from "../../components/Modal";
+import PageLayout from "../../components/Layout";
 
 function OwnerMyPage() {
   const { user } = useAuth();
@@ -19,7 +23,6 @@ function OwnerMyPage() {
   const [modalType, setModalType] = useState(null);
   const [ownerProfile, setOwnerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  // 수정 폼 상태
   const [editForm, setEditForm] = useState({
     name: "",
     phone: "",
@@ -30,10 +33,8 @@ function OwnerMyPage() {
 
   const closeModal = () => setModalType(null);
 
-  // 프로필 불러오기
   useEffect(() => {
     if (!ownerId) return;
-
     const loadProfile = async () => {
       try {
         setLoading(true);
@@ -52,14 +53,11 @@ function OwnerMyPage() {
         setLoading(false);
       }
     };
-
     loadProfile();
   }, [ownerId]);
 
-  // 정보 수정 제출
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-
     if (!editForm.name.trim()) {
       alert("이름을 입력해주세요.");
       return;
@@ -68,7 +66,6 @@ function OwnerMyPage() {
       alert("전화번호를 입력해주세요.");
       return;
     }
-
     try {
       setEditLoading(true);
       const updated = await ownerAPI.updateOwnerProfile(ownerId, editForm);
@@ -85,250 +82,245 @@ function OwnerMyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <Navbar userType="owner" />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-500" />
-          <span className="ml-2 text-slate-500">프로필 로딩 중...</span>
+      <PageLayout userType="owner">
+        <div className="flex items-center justify-center py-20 text-slate-500">
+          <Loader2 className="w-8 h-8 animate-spin mr-2" />
+          프로필 로딩 중...
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   if (!ownerProfile) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <Navbar userType="owner" />
-        <div className="container mx-auto px-6 py-8">
-          <p className="text-center text-slate-500">
-            프로필 정보를 불러올 수 없습니다.
-          </p>
-        </div>
-      </div>
+      <PageLayout userType="owner">
+        <p className="text-center text-slate-500">프로필 정보를 불러올 수 없습니다.</p>
+      </PageLayout>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar userType="owner" />
+  const joinedAt = ownerProfile.createdAt
+    ? new Date(ownerProfile.createdAt).toLocaleDateString("ko-KR")
+    : "-";
 
-      {/* ------------------------------ Main ------------------------------ */}
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        {/* 프로필 카드 (핵심 정보 중심) */}
-        <Card className="mb-6 border-slate-200 bg-white shadow-sm">
-          <CardContent className="px-6 py-5 md:px-8 md:py-6 space-y-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 bg-green-100">
-                  <AvatarFallback className="text-2xl text-green-700 font-semibold">
-                    {ownerProfile.name?.[0] || "사"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-semibold text-slate-900">
-                      {ownerProfile.name}
-                    </h2>
-                    <Badge className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
-                      사업자
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-slate-500">
-                    {ownerProfile.phone}
-                    {ownerProfile.email ? ` · ${ownerProfile.email}` : ""}
-                  </p>
+  return (
+    <PageLayout userType="owner">
+      <div className="space-y-10">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-2xl">
+          <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-primary-green/20 blur-3xl" />
+          <div className="flex flex-col gap-8 md:flex-row md:items-center">
+            <div className="flex items-center justify-center rounded-3xl bg-white/10 p-3 shadow-inner">
+              <Avatar className="h-24 w-24 bg-white">
+                <AvatarFallback className="text-3xl text-slate-900 font-semibold">
+                  {ownerProfile.name?.[0] || "사"}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
+            <div className="flex-1 space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <h1 className="text-3xl font-semibold tracking-tight">{ownerProfile.name}</h1>
+                <Badge className="bg-emerald-400 text-slate-900">사업자</Badge>
+              </div>
+              <p className="text-base text-slate-200">
+                {ownerProfile.phone}
+                {ownerProfile.email ? ` · ${ownerProfile.email}` : ""}
+              </p>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="rounded-2xl bg-white/10 px-4 py-2">
+                  가입일: <strong className="text-white">{joinedAt}</strong>
+                </div>
+                <div className="rounded-2xl bg-white/10 px-4 py-2">
+                  사업자등록번호: {" "}
+                  <strong className="text-white">
+                    {ownerProfile.businessNumber || "미등록"}
+                  </strong>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setModalType("edit")}
-                className="border-slate-300 text-slate-700 hover:border-slate-400"
-              >
-                내 정보 수정
-              </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-              <span>가입일:</span>
-              <span className="font-medium text-slate-900">
-                {ownerProfile.createdAt
-                  ? new Date(ownerProfile.createdAt).toLocaleDateString("ko-KR")
-                  : "-"}
-              </span>
-            </div>
+          </div>
+        </section>
 
-            <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <div className="text-xs font-semibold text-slate-500 mb-1">
-                사업자등록번호
-              </div>
-              <div className="font-mono text-base text-slate-900">
-                {ownerProfile.businessNumber || "미등록"}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <section className="space-y-6 rounded-3xl bg-white px-6 py-6 shadow-lg">
+          <div>
+            <p className="text-sm uppercase tracking-[0.4em] text-slate-400">주요 관리</p>
+            <h2 className="text-2xl font-semibold text-slate-900">설정 & 액션</h2>
+          </div>
+          <Card className="border-slate-200 shadow-sm">
+            <CardContent className="space-y-4 px-5 pt-10 pb-10">
+              {[{
+                title: "사업자 정보 수정",
+                desc: "이름, 연락처, 이메일, 사업자등록번호를 변경합니다.",
+                action: () => setModalType("edit"),
+                danger: false,
+              },
+              {
+                title: "알림 설정",
+                desc: "푸시·이메일 알림을 관리합니다.",
+                action: () => setModalType("alert"),
+                danger: false,
+              },
+              {
+                title: "회원 탈퇴",
+                desc: "계정 및 예약 정보를 삭제합니다.",
+                action: () => setModalType("withdraw"),
+                danger: true,
+              }].map((item) => (
+                <div
+                  key={item.title}
+                  className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{item.title}</p>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={item.danger ? "border-red-300 text-red-600 hover:bg-red-50" : "border-slate-300"}
+                    onClick={item.action}
+                  >
+                    {item.title}
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      </div>
 
-        {/* 간편 링크 섹션 */}
-        <Card className="border-slate-200">
-          <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm text-slate-500">
-                주요 관리 페이지로 이동하면 상세한 가게/예약 데이터를 확인할 수 있습니다.
-              </p>
-              <p className="text-lg font-semibold text-slate-900 mt-1">
-                내 가게 관리 바로가기
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/owner/my-businesses")}
-            >
-              내 가게 페이지 이동
-            </Button>
-          </CardContent>
-        </Card>
-      </main>
-
-      {/* ============ 사업자 정보 수정 모달 ============ */}
-      <Modal
+      <PrivacyModal
         isOpen={modalType === "edit"}
         onClose={closeModal}
-        title="사업자 정보 수정"
-      >
-        <form onSubmit={handleEditSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              이름 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={editForm.name}
-              onChange={(e) =>
-                setEditForm({ ...editForm, name: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="사업자 이름"
-              required
-            />
-          </div>
+        editForm={editForm}
+        setEditForm={setEditForm}
+        handleEditSubmit={handleEditSubmit}
+        editLoading={editLoading}
+      />
+      <AlertModal isOpen={modalType === "alert"} onClose={closeModal} />
+      <WithdrawModal isOpen={modalType === "withdraw"} onClose={closeModal} />
+    </PageLayout>
+  );
+}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              전화번호 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              value={editForm.phone}
-              onChange={(e) =>
-                setEditForm({ ...editForm, phone: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="010-1234-5678"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              이메일
-            </label>
-            <input
-              type="email"
-              value={editForm.email}
-              onChange={(e) =>
-                setEditForm({ ...editForm, email: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="example@email.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              사업자등록번호
-            </label>
-            <input
-              type="text"
-              value={editForm.businessNumber}
-              onChange={(e) =>
-                setEditForm({ ...editForm, businessNumber: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="123-45-67890"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              하이픈(-)을 포함하여 입력해주세요
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="submit"
-              disabled={editLoading}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-            >
-              {editLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                "저장"
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={closeModal}
-              disabled={editLoading}
-              className="flex-1"
-            >
-              취소
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* 알림 설정 모달 */}
-      <Modal
-        isOpen={modalType === "alert"}
-        onClose={closeModal}
-        title="알림 설정"
-      >
-        <p className="text-slate-600">알림 설정 기능은 곧 추가될 예정입니다.</p>
-      </Modal>
-
-      {/* 회원 탈퇴 모달 */}
-      <Modal
-        isOpen={modalType === "withdraw"}
-        onClose={closeModal}
-        title="회원 탈퇴"
-      >
-        <div className="space-y-4">
-          <p className="text-slate-700">정말로 탈퇴하시겠습니까?</p>
-          <p className="text-sm text-red-600">
-            탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
-          </p>
-          <div className="flex gap-3 pt-4">
-            <Button
-              variant="destructive"
-              className="flex-1"
-              onClick={() => {
-                alert("탈퇴 기능은 곧 추가될 예정입니다.");
-                closeModal();
-              }}
-            >
-              탈퇴하기
-            </Button>
-            <Button variant="outline" onClick={closeModal} className="flex-1">
-              취소
-            </Button>
-          </div>
+function PrivacyModal({ isOpen, onClose, editForm, setEditForm, handleEditSubmit, editLoading }) {
+  if (!isOpen) return null;
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="사업자 정보 수정">
+      <form onSubmit={handleEditSubmit} className="space-y-4 pt-2 pb-2">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            이름 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="사업자 이름"
+            required
+          />
         </div>
-      </Modal>
-    </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            전화번호 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            value={editForm.phone}
+            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="010-1234-5678"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">이메일</label>
+          <input
+            type="email"
+            value={editForm.email}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="example@email.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">사업자등록번호</label>
+          <input
+            type="text"
+            value={editForm.businessNumber}
+            onChange={(e) => setEditForm({ ...editForm, businessNumber: e.target.value })}
+            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="123-45-67890"
+          />
+          <p className="text-xs text-slate-500 mt-1">하이픈(-)을 포함하여 입력해주세요</p>
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <Button type="submit" disabled={editLoading} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+            {editLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              "저장"
+            )}
+          </Button>
+          <Button type="button" variant="outline" onClick={onClose} disabled={editLoading} className="flex-1">
+            취소
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function AlertModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="알림 설정">
+      <div className="space-y-4 text-sm text-slate-600">
+        <p>알림 설정 기능은 곧 추가될 예정입니다.</p>
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            닫기
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function WithdrawModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="회원 탈퇴">
+      <div className="space-y-4">
+        <p className="text-slate-700">정말로 탈퇴하시겠습니까?</p>
+        <p className="text-sm text-red-600">탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.</p>
+        <div className="flex gap-3 pt-4">
+          <Button
+            variant="destructive"
+            className="flex-1"
+            onClick={() => {
+              alert("탈퇴 기능은 곧 추가될 예정입니다.");
+              onClose();
+            }}
+          >
+            탈퇴하기
+          </Button>
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            취소
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

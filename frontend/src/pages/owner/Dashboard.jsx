@@ -2,20 +2,19 @@ import { Link } from "react-router-dom";
 import {
   Calendar,
   AlertTriangle,
-  DollarSign,
   Users,
-  TrendingUp,
   Clock,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import StatCard from "../../components/StatCard";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
-import Navbar from "../../components/Navbar";
+import PageLayout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
+import { reservationAPI } from "../../services/reservations";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -23,48 +22,53 @@ const Dashboard = () => {
   // 🔥 로그인된 사장님 ID
   const ownerId = user?.ownerId;
 
+  const [reservations, setReservations] = useState([]);
   const [todayReservations, setTodayReservations] = useState([]);
+  const [noShowRates, setNoShowRates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // ------------------------------------------------------
-  // 🔥 오늘 예약 불러오기 + 30초마다 자동 새로고침
-  // ------------------------------------------------------
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!ownerId) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const [resv, noShow] = await Promise.all([
+        reservationAPI.getOwnerReservations(ownerId),
+        reservationAPI.getOwnerNoShowRates(ownerId).catch(() => []),
+      ]);
 
-    const fetchReservations = () => {
-      axios
-        .get(`http://localhost:8080/api/owners/${ownerId}/reservations`)
-        .then((res) => {
-          // 오늘 날짜 기준 필터링
-          const today = new Date().toISOString().slice(0, 10);
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const mappedToday = resv
+        .filter((r) => r.reservationTime?.startsWith(todayKey))
+        .map((item) => ({
+          id: item.id,
+          customerName: item.customerName || "고객",
+          trustLevel: item.trustLevel || "일반",
+          stars: item.rating || 3,
+          time: item.reservationTime?.substring(11, 16) || "-",
+          partySize: item.people,
+          status: item.status?.toUpperCase() === "CONFIRMED" ? "confirmed" : "pending",
+          menu: item.menu || "메뉴 정보 없음",
+          paymentStatus: item.paymentStatus || "UNPAID",
+        }));
 
-          const mapped = res.data
-            .filter((r) => r.reservationTime.startsWith(today))
-            .map((item) => ({
-              id: item.id,
-              customerName: item.customerName || "고객",
-              trustLevel: "단골",
-              stars: 3,
-              time: item.reservationTime.substring(11, 16),
-              partySize: item.people,
-              status: item.status === "CONFIRMED" ? "confirmed" : "pending",
-              menu: item.menu || "메뉴 정보 없음",
-              paymentStatus: item.paymentStatus,
-            }));
-
-          setTodayReservations(mapped);
-        })
-        .catch((err) => console.error("예약 데이터를 불러오는 중 오류:", err));
-    };
-
-    // 초기 로드
-    fetchReservations();
-
-    // 30초마다 자동 새로고침
-    const interval = setInterval(fetchReservations, 30 * 1000);
-
-    return () => clearInterval(interval);
+      setReservations(resv || []);
+      setTodayReservations(mappedToday);
+      setNoShowRates(noShow || []);
+    } catch (err) {
+      console.error("대시보드 데이터 불러오기 오류:", err);
+      setError("데이터를 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
   }, [ownerId]);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   // ⭐ 신뢰등급 색상
   const trustLevelColors = {
@@ -74,65 +78,104 @@ const Dashboard = () => {
   };
 
   // ⭐ 통계 카드는 UI 유지
-  const stats = [
-    {
-      icon: <Calendar />,
-      title: "오늘 예약",
-      value: `${todayReservations.length}건`,
-      change: "+12% 전일 대비",
-      changeType: "positive",
-    },
-    {
-      icon: <AlertTriangle />,
-      title: "이번 달 노쇼율",
-      value: "3.2%",
-      change: "-2.1% 전월 대비",
-      changeType: "positive",
-    },
-    {
-      icon: <DollarSign />,
-      title: "이번 달 예상 매출",
-      value: "₩8.2M",
-      change: "+15.3% 전월 대비",
-      changeType: "positive",
-    },
-    {
-      icon: <Users />,
-      title: "신뢰 고객 비율",
-      value: "78%",
-      change: "+5% 전월 대비",
-      changeType: "positive",
-    },
-  ];
+  const stats = useMemo(() => {
+    const confirmedCount = reservations.filter((r) => r.status?.toUpperCase() === "CONFIRMED").length;
+    const pendingCount = reservations.filter((r) => r.status?.toUpperCase() === "PENDING").length;
+    const cancelledCount = reservations.filter((r) => r.status?.toUpperCase() === "CANCELLED").length;
+
+    const now = new Date();
+    const in7days = new Date();
+    in7days.setDate(now.getDate() + 7);
+    const upcoming7 = reservations.filter((r) => {
+      const t = r.reservationTime ? new Date(r.reservationTime) : null;
+      if (!t || Number.isNaN(t.getTime())) return false;
+      return t >= now && t <= in7days;
+    }).length;
+
+    const noShowPct = Number(noShowRates[0]?.noShowPercentage) || 0;
+    const visitRate = Math.max(0, 100 - (noShowPct || 0));
+
+    return [
+      {
+        icon: <Calendar />,
+        title: "오늘 예약",
+        value: `${todayReservations.length}건`,
+        change: `확정 ${confirmedCount} · 대기 ${pendingCount}`,
+        changeType: "neutral",
+      },
+      {
+        icon: <AlertTriangle />,
+        title: "최근 노쇼율",
+        value: `${noShowPct.toFixed(1)}%`,
+        change: `예상 방문율 ${visitRate.toFixed(1)}%`,
+        changeType: "neutral",
+      },
+      {
+        icon: <Users />,
+        title: "7일 내 예정",
+        value: `${upcoming7}건`,
+        change: `취소 ${cancelledCount}`,
+        changeType: "neutral",
+      },
+      {
+        icon: <Clock />,
+        title: "전체 예약",
+        value: `${reservations.length}건`,
+        change: `진행 중 ${reservations.length - cancelledCount}건`,
+        changeType: "neutral",
+      },
+    ];
+  }, [reservations, todayReservations.length, noShowRates]);
 
   // ------------------------------------------------------
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar userType="owner" />
+  if (!ownerId) {
+    return (
+      <PageLayout userType="owner">
+        <p className="text-center text-slate-500 py-12">로그인 후 이용해주세요.</p>
+      </PageLayout>
+    );
+  }
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* 환영 메시지 */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2 text-text-primary">
+  if (loading) {
+    return (
+      <PageLayout userType="owner">
+        <div className="flex items-center justify-center py-12 text-slate-500">
+          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          대시보드 로딩 중...
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageLayout userType="owner">
+        <p className="text-center text-red-500 py-12">{error}</p>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout userType="owner">
+      <div className="space-y-10">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-3xl font-bold text-text-primary">
             안녕하세요, {user?.name || "사장님"}님
           </h2>
           <p className="text-text-secondary">
-            오늘도 노쇼 걱정 없는 하루 되세요!
+            오늘 예약과 노쇼/취소 현황을 실시간으로 확인하세요.
           </p>
         </div>
 
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
             <StatCard key={index} {...stat} />
           ))}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* 오늘의 예약 */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -140,15 +183,12 @@ const Dashboard = () => {
                     <Calendar className="mr-2 text-primary-green" size={24} />
                     오늘의 예약
                   </h2>
-
-                  {/* 🔥 전체보기 버튼 — 예약관리 페이지와 데이터 공유됨 */}
                   <Link to="/owner/reservations">
                     <Button size="sm" variant="outline">
                       전체보기
                     </Button>
                   </Link>
                 </div>
-
                 <div className="space-y-4">
                   {todayReservations.length === 0 ? (
                     <p className="text-center text-text-secondary">
@@ -168,7 +208,7 @@ const Dashboard = () => {
                               </span>
                               <span
                                 className={`text-sm ${
-                                  trustLevelColors[reservation.trustLevel]
+                                  trustLevelColors[reservation.trustLevel] || "text-slate-500"
                                 }`}
                               >
                                 {reservation.trustLevel}{" "}
@@ -192,14 +232,14 @@ const Dashboard = () => {
                             </p>
                           </div>
 
-                          <div>
+                          <div className="text-right">
                             {reservation.status === "confirmed" ? (
-                              <div className="flex items-center text-primary-green text-sm font-semibold">
+                              <div className="flex items-center justify-end text-primary-green text-sm font-semibold">
                                 <CheckCircle size={16} className="mr-1" />
                                 확정
                               </div>
                             ) : (
-                              <div className="flex items-center text-yellow-600 text-sm font-semibold">
+                              <div className="flex items-center justify-end text-yellow-600 text-sm font-semibold">
                                 <AlertCircle size={16} className="mr-1" />
                                 대기
                               </div>
@@ -216,8 +256,7 @@ const Dashboard = () => {
                                     : "bg-gray-200 text-gray-700"
                                 }`}
                               >
-                                결제 상태:{" "}
-                                {reservation.paymentStatus || "UNPAID"}
+                                결제 상태: {reservation.paymentStatus || "UNPAID"}
                               </span>
                             </div>
                           </div>
@@ -230,93 +269,56 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* 우측 패널 */}
           <div className="space-y-6">
             <Card>
-              <div className="p-6">
-                <h2 className="text-xl font-bold text-text-primary mb-6">
-                  빠른 액션
-                </h2>
-
-                <div className="space-y-3">
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-text-primary">
+                    노쇼/취소 현황
+                  </h3>
                   <Link to="/owner/reservations">
-                    <button className="w-full bg-primary-green hover:bg-dark-green text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
-                      <Calendar className="mr-2" size={20} />
-                      예약 추가하기
-                    </button>
+                    <Button size="sm" variant="outline">자세히</Button>
                   </Link>
-
-                  <Link to="/owner/menu-ocr">
-                    <button className="w-full bg-primary-purple hover:bg-dark-purple text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
-                      <TrendingUp className="mr-2" size={20} />
-                      메뉴 등록 (OCR)
-                    </button>
-                  </Link>
-
+                </div>
+                <div className="space-y-2 text-sm text-slate-600">
+                  <div className="flex justify-between">
+                    <span>최근 노쇼율</span>
+                    <span className="font-semibold text-primary-green">
+                      {(noShowRates[0]?.noShowPercentage ?? 0).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>취소 건수</span>
+                    <span className="font-semibold text-slate-900">
+                      {reservations.filter((r) => r.status?.toUpperCase() === "CANCELLED").length}건
+                    </span>
+                  </div>
                 </div>
               </div>
             </Card>
 
             <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-text-primary mb-4">
-                  이번 주 성과
-                </h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-text-secondary">
-                        신뢰 고객 비율
-                      </span>
-                      <span className="font-semibold text-primary-green">
-                        78%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-primary-green h-2 rounded-full"
-                        style={{ width: "78%" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-text-secondary">예약 달성률</span>
-                      <span className="font-semibold text-primary-purple">
-                        92%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-primary-purple h-2 rounded-full"
-                        style={{ width: "92%" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-text-secondary">노쇼 방지율</span>
-                      <span className="font-semibold text-dark-green">
-                        96.8%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-dark-green h-2 rounded-full"
-                        style={{ width: "96.8%" }}
-                      />
-                    </div>
-                  </div>
+              <div className="p-6 space-y-6">
+                <h3 className="text-lg font-bold text-text-primary">빠른 액션</h3>
+                <div className="flex flex-col gap-5">
+                  <Link to="/owner/reservations" className="block">
+                    <button className="w-full bg-primary-green hover:bg-dark-green text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                      <Calendar className="mr-2" size={20} />
+                      예약 관리로 이동
+                    </button>
+                  </Link>
+                  <Link to="/owner/menu-ocr" className="block">
+                    <button className="w-full bg-primary-purple hover:bg-dark-purple text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                      메뉴 등록 (OCR)
+                    </button>
+                  </Link>
                 </div>
               </div>
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 };
 

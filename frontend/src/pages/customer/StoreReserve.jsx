@@ -70,7 +70,7 @@ export default function StoreReserve() {
       // 결제 포함 예약 API 호출
       await storeAPI.fullPayReservation(data);
       alert("예약이 완료되었습니다!");
-      navigate("/customer/my-page");
+      navigate("/customer/nearby");
     } catch (err) {
       alert("예약 중 오류 발생: " + err.message);
     } finally {

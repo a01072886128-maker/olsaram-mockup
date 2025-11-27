@@ -1,10 +1,7 @@
-version: "3.9"
 services:
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    image: olsaram-backend:latest
+    image: allsaram.kr.ncr.ntruss.com/olsaram-backend:latest
+    container_name: olsaram-backend
     ports:
       - "8080:8080"
     env_file:
@@ -19,14 +16,12 @@ services:
       - backend-logs:/app/logs
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    image: olsaram-frontend:latest
+    image: allsaram.kr.ncr.ntruss.com/olsaram-frontend:latest
+    container_name: olsaram-frontend
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
-      - backend`
+      - backend
     environment:
       - BACKEND_HOST=backend
       - BACKEND_PORT=8080

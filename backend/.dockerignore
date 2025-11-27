@@ -1,0 +1,9 @@
+.git
+.gitignore
+.gradle
+build
+.env
+.env.*
+Dockerfile
+README.md
+QUICKSTART_NOSHOW.md

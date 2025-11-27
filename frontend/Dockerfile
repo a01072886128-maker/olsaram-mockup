@@ -3,6 +3,8 @@ WORKDIR /workspace/frontend
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG VITE_KAKAO_MAP_APP_KEY
+ENV VITE_KAKAO_MAP_APP_KEY=${VITE_KAKAO_MAP_APP_KEY}
 RUN npm run build
 
 FROM nginx:stable-alpine

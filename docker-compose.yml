@@ -1,5 +1,8 @@
 services:
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: allsaram.kr.ncr.ntruss.com/olsaram-backend:latest
     container_name: olsaram-backend
     ports:
@@ -16,6 +19,11 @@ services:
       - backend-logs:/app/logs
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_KAKAO_MAP_APP_KEY: ${VITE_KAKAO_MAP_APP_KEY}
     image: allsaram.kr.ncr.ntruss.com/olsaram-frontend:latest
     container_name: olsaram-frontend
     ports:

@@ -5,6 +5,7 @@ import com.olsaram.backend.domain.customer.Customer;
 import com.olsaram.backend.domain.reservation.PaymentStatus;
 import com.olsaram.backend.domain.reservation.Reservation;
 import com.olsaram.backend.domain.reservation.ReservationStatus;
+import com.olsaram.backend.service.ai.AiNoshowService;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
 import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;
 import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
@@ -30,6 +31,7 @@ public class ReservationService {
     private final CustomerRepository customerRepository;
     private final PaymentService paymentService;
     private final RiskCalculationService riskCalculationService;
+    private final AiNoshowService aiNoshowService;
 
     // -------------------------
     // CREATE

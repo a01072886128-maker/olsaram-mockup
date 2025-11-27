@@ -14,8 +14,9 @@ import java.util.List;
 @Repository
 public interface FraudReportRepository extends JpaRepository<FraudReport, Long> {
 
-    // 전화번호로 신고 목록 조회
-    List<FraudReport> findByPhoneNumber(String phoneNumber);
+    // 전화번호로 신고 목록 조회 (정확히 일치하는 것만)
+    @Query("SELECT f FROM FraudReport f WHERE f.phoneNumber = :phoneNumber")
+    List<FraudReport> findByPhoneNumber(@Param("phoneNumber") String phoneNumber);
 
     // 전화번호로 신고 건수 조회
     Long countByPhoneNumber(String phoneNumber);

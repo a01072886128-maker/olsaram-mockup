@@ -90,7 +90,13 @@ public class ReservationRiskService {
                 riskFactors.add("노쇼 이력 1회");
             }
 
-            // 신뢰 점수는 별도 저장하지 않고 위험도(100-신뢰)로 표현하므로 제외
+            // 신뢰점수(trustScore)는 DB값 사용 (risk = 100 - trustScore)
+            Integer trustScore = customer.getTrustScore();
+            if (trustScore != null) {
+                riskScore = clampScore(trustScore);
+                riskLevel = riskScore >= 70 ? "LOW" : (riskScore >= 40 ? "MEDIUM" : "HIGH");
+                riskFactors.add("신뢰점수 " + trustScore);
+            }
 
             // 규칙 5: 신규 고객 (예약 이력 없음)
             if (reservationCount == 0) {
@@ -179,5 +185,13 @@ public class ReservationRiskService {
         return reservationIds.stream()
                 .map(this::calculateReservationRisk)
                 .toList();
+    }
+
+    /**
+     * 점수 범위 제한 (0~100)
+     */
+    private int clampScore(Integer score) {
+        if (score == null) return 100;
+        return Math.max(0, Math.min(100, score));
     }
 }

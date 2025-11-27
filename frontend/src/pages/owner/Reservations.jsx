@@ -124,8 +124,14 @@ const normalizeScore = (value) => {
   return Math.max(0, Math.min(100, parsed));
 };
 
-// 단일 위험도 소스: 서버 riskScore → 100-점수, 없으면 riskPercent
+// 단일 위험도 소스: customerData.trustScore를 100 - trustScore로 계산
 const getDerivedRiskPercent = (reservation) => {
+  // DB의 customer.trustScore를 우선 사용
+  const trust = reservation?.customerData?.trustScore ?? reservation?.trustScore;
+  if (trust !== undefined && trust !== null) {
+    return normalizeNoShowPercentage(100 - normalizeScore(trust));
+  }
+
   const rawScore = reservation?.riskScore;
   if (rawScore !== undefined && rawScore !== null) {
     const score = normalizeScore(rawScore);
@@ -144,13 +150,11 @@ const getReservationTrustScore = (reservation) => {
   return normalizeScore(100 - risk);
 };
 
-const getRiskLevelFromTrustScore = (score) => {
-  if (score >= 100) {
-    return "LOW";
-  }
-  if (score > 50) {
-    return "MEDIUM";
-  }
+// 위험도 퍼센트 기반으로 레벨 계산
+const getRiskLevelFromRiskPercent = (riskPercent) => {
+  const normalized = normalizeNoShowPercentage(riskPercent);
+  if (normalized <= 30) return "LOW";
+  if (normalized <= 50) return "MEDIUM";
   return "HIGH";
 };
 
@@ -287,11 +291,12 @@ const ReservationCard = ({
   const suspiciousPatterns = reservation.suspiciousPatterns || [];
   const autoActions = reservation.autoActions || [];
 
-  const trustScore = getReservationTrustScore(reservation);
+  // 위험도는 customer.trustScore를 100 - trustScore로 계산한 값으로 통일
   const riskPercentValue = getDerivedRiskPercent(reservation);
-  const riskLevel = getRiskLevelFromTrustScore(trustScore);
+  const riskLevel = getRiskLevelFromRiskPercent(riskPercentValue);
   const riskColor = getRiskColor(riskLevel);
   const riskLabelText = getRiskLabel(riskLevel);
+  const trustScore = getReservationTrustScore(reservation); // VIP 판단용으로만 사용
 
   const baseFeeAmount = reservation.baseFeeAmount ?? 0;
   const appliedFeePercent = reservation.appliedFeePercent ?? 0;
@@ -364,7 +369,7 @@ const ReservationCard = ({
           {reservation.people || 0}명
         </span>
         <span style={{ color: riskColor }} className="font-medium">
-          위험도: {trustScore}점 ({riskLabelText})
+          위험도: {(riskPercentValue ?? 0).toFixed(1)}% ({riskLabelText})
         </span>
         {paymentAmount != null && (
           <span className="flex items-center gap-1 text-emerald-700">
@@ -730,10 +735,10 @@ function Reservations() {
           return timeA - timeB;
         }
 
-        // 2차: 위험도 높은 순 (점수가 낮을수록 위험)
-        const scoreA = getReservationTrustScore(a);
-        const scoreB = getReservationTrustScore(b);
-        return scoreA - scoreB;
+        // 2차: 위험도 높은 순 (위험도 퍼센트가 높을수록 위험)
+        const riskA = getDerivedRiskPercent(a);
+        const riskB = getDerivedRiskPercent(b);
+        return riskB - riskA; // 내림차순 (위험도 높은 것 먼저)
       });
     },
     []

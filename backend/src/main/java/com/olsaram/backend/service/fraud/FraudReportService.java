@@ -11,7 +11,6 @@ import com.olsaram.backend.repository.BusinessOwnerRepository;
 import com.olsaram.backend.repository.fraud.FraudReportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +64,7 @@ public class FraudReportService {
     }
 
     /**
-     * 전화번호 조회
+     * 전화번호 조회 (정확히 일치하는 것만)
      */
     @Transactional(readOnly = true)
     public FraudPhoneSearchResponse searchByPhone(String phoneNumber) {
@@ -75,8 +74,15 @@ public class FraudReportService {
         String normalizedPhone = normalizePhoneNumber(phoneNumber);
         log.info("정규화된 전화번호: {}", normalizedPhone);
 
+        // 정확히 일치하는 전화번호만 조회
         List<FraudReport> reports = fraudReportRepository.findByPhoneNumber(normalizedPhone);
-        log.info("조회된 신고 건수: {}", reports.size());
+        
+        // 추가 검증: 조회된 결과가 정확히 일치하는지 확인
+        reports = reports.stream()
+                .filter(r -> r.getPhoneNumber() != null && r.getPhoneNumber().equals(normalizedPhone))
+                .collect(Collectors.toList());
+        
+        log.info("정확히 일치하는 신고 건수: {}", reports.size());
 
         if (!reports.isEmpty()) {
             for (FraudReport report : reports) {
@@ -250,21 +256,27 @@ public class FraudReportService {
         return response;
     }
 
+    /**
+     * 전화번호 정규화 (하이픈, 공백 제거하여 정확히 일치하도록)
+     */
     private String normalizePhoneNumber(String phone) {
-        if (phone == null) return null;
-        return phone.replaceAll("-", "").replaceAll(" ", "");
+        if (phone == null || phone.trim().isEmpty()) return null;
+        // 하이픈, 공백, 괄호 제거하여 숫자만 남김
+        return phone.replaceAll("[\\s\\-\\(\\)]", "").trim();
     }
 
     private String getSeverityLevel(int count) {
+        if (count == 0) return "SAFE";
         if (count >= 5) return "URGENT";
         if (count >= 3) return "WARNING";
-        return "SAFE";
+        return "CAUTION"; // 1-2건
     }
 
     private String getSeverityLabel(String level, int count) {
         return switch (level) {
             case "URGENT" -> "긴급: 이 번호는 " + count + "건의 신고 이력이 있습니다";
             case "WARNING" -> "주의: 이 번호는 " + count + "건의 신고 이력이 있습니다";
+            case "CAUTION" -> "주의 필요: 이 번호는 " + count + "건의 신고 이력이 있습니다";
             default -> "안전: 신고 이력이 없습니다";
         };
     }

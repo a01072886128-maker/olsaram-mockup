@@ -17,7 +17,6 @@ import com.olsaram.backend.repository.reservation.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import com.olsaram.backend.service.ai.AiNoshowService;
 
 
 import java.time.LocalDateTime;
@@ -248,10 +247,16 @@ public class ReservationService {
                     try {
                         int currentNoShowCount = customer.getNoShowCount() != null ? customer.getNoShowCount() : 0;
                         customer.setNoShowCount(currentNoShowCount + 1);
+                        int newNoShowCount = currentNoShowCount + 1;
 
-                        // 신뢰 점수 감소 (노쇼 1회당 -10점, 최소 0점)
-                        int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
-                        customer.setTrustScore(Math.max(0, currentTrustScore - 10));
+                        // 신뢰 점수 계산: 노쇼 횟수에 따라 더 큰 가중치로 감소
+                        // 노쇼 횟수가 많을수록 더 많이 감소 (노쇼 횟수 * 15점 감소, 최소 0점)
+                        int reservationCount = customer.getReservationCount() != null ? customer.getReservationCount() : 0;
+                        
+                        // trust_score = 100 - (노쇼횟수 * 큰가중치) + (예약횟수 * 작은가중치)
+                        // 노쇼 가중치: 15점, 예약 가중치: 2점
+                        int calculatedTrustScore = 100 - (newNoShowCount * 15) + (reservationCount * 2);
+                        customer.setTrustScore(Math.max(0, Math.min(100, calculatedTrustScore)));
 
                         customerRepository.save(customer);
                     } catch (Exception e) {
@@ -300,10 +305,16 @@ public class ReservationService {
                     try {
                         int currentReservationCount = customer.getReservationCount() != null ? customer.getReservationCount() : 0;
                         customer.setReservationCount(currentReservationCount + 1);
+                        int newReservationCount = currentReservationCount + 1;
 
-                        // 신뢰 점수 증가 (정상 방문 1회당 +5점, 최대 100점)
-                        int currentTrustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
-                        customer.setTrustScore(Math.min(100, currentTrustScore + 5));
+                        // 신뢰 점수 계산: 예약 횟수에 따라 증가, 노쇼 횟수에 따라 감소
+                        // 노쇼 횟수가 더 큰 가중치를 가짐
+                        int noShowCount = customer.getNoShowCount() != null ? customer.getNoShowCount() : 0;
+                        
+                        // trust_score = 100 - (노쇼횟수 * 큰가중치) + (예약횟수 * 작은가중치)
+                        // 노쇼 가중치: 15점, 예약 가중치: 2점
+                        int calculatedTrustScore = 100 - (noShowCount * 15) + (newReservationCount * 2);
+                        customer.setTrustScore(Math.max(0, Math.min(100, calculatedTrustScore)));
 
                         customerRepository.save(customer);
                     } catch (Exception e) {
@@ -394,9 +405,10 @@ public class ReservationService {
     }
 
     // 3. 모의 결제 처리 (Payment 엔티티 생성)
-        int baseScore = clampScore(customer != null && customer.getTrustScore() != null
-                ? customer.getTrustScore()
-                : riskCalculationService.calculateRiskScore(customer, savedReservation));
+        int trustScoreValue = customer != null && customer.getTrustScore() != null
+                ? clampScore(customer.getTrustScore())
+                : clampScore(riskCalculationService.calculateRiskScore(customer, savedReservation));
+        int baseScore = trustScoreValue;
         String riskLevel = riskCalculationService.getRiskLevel(baseScore);
 
         double riskPercent = calculateRiskPercent(baseScore);
@@ -528,9 +540,9 @@ public class ReservationService {
                     Business business = businessMap.get(reservation.getBusinessId());
 
                     // 위험도 계산 (결제/표시 동일 기준)
-                    int feeBaseScore = clampScore(customer != null && customer.getTrustScore() != null
-                            ? customer.getTrustScore()
-                            : riskCalculationService.calculateRiskScore(customer, reservation));
+                    int feeBaseScore = customer != null && customer.getTrustScore() != null
+                            ? clampScore(customer.getTrustScore())
+                            : clampScore(riskCalculationService.calculateRiskScore(customer, reservation));
                     String riskLevel = riskCalculationService.getRiskLevel(feeBaseScore);
                     List<String> patterns = riskCalculationService.analyzeSuspiciousPatterns(customer, reservation);
                     List<String> actions = riskCalculationService.getAutoActions(riskLevel, reservation);
@@ -561,7 +573,9 @@ public class ReservationService {
                                 .reservationCount(customer.getReservationCount() != null ? customer.getReservationCount() : 0)
                                 .lastMinuteCancels(0) // 추후 구현
                                 .accountAgeDays(accountAgeDays)
-                                .trustScore(customer.getTrustScore() != null ? customer.getTrustScore() : 100)
+                                .trustScore(customer.getTrustScore() != null
+                                        ? clampScore(customer.getTrustScore())
+                                        : feeBaseScore)
                                 .customerGrade(customer.getCustomerGrade())
                                 .build();
                     }

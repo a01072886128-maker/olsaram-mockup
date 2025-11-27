@@ -344,6 +344,10 @@ const Community = () => {
         return "긴급";
       case "WARNING":
         return "주의";
+      case "CAUTION":
+        return "주의 필요";
+      case "SAFE":
+        return "안전";
       default:
         return "검토중";
     }
@@ -612,6 +616,7 @@ const Community = () => {
                         >
                           {report.severity_level === "URGENT" && "🔴 "}
                           {report.severity_level === "WARNING" && "🟠 "}
+                          {report.severity_level === "CAUTION" && "🟡 "}
                           {report.severity_level === "SAFE" && "🟢 "}
                           {getSeverityLabel(report.severity_level)}
                         </div>

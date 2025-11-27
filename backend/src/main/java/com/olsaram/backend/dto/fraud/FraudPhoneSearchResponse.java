@@ -26,7 +26,7 @@ public class FraudPhoneSearchResponse {
     private Long totalDamage;
 
     @JsonProperty("severity_level")
-    private String severityLevel; // URGENT (5건 이상), WARNING (3-4건), SAFE (0-2건)
+    private String severityLevel; // URGENT (5건 이상), WARNING (3-4건), CAUTION (1-2건), SAFE (0건)
 
     @JsonProperty("severity_label")
     private String severityLabel;

@@ -78,6 +78,8 @@ export const getSeverityColor = (level) => {
       return { bg: "bg-red-100", text: "text-red-600", border: "border-red-400" };
     case "WARNING":
       return { bg: "bg-orange-100", text: "text-orange-600", border: "border-orange-400" };
+    case "CAUTION":
+      return { bg: "bg-yellow-100", text: "text-yellow-600", border: "border-yellow-400" };
     default:
       return { bg: "bg-green-100", text: "text-green-600", border: "border-green-400" };
   }

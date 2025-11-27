@@ -34,6 +34,13 @@ public class ReservationWithRiskResponse {
     private List<String> suspiciousPatterns;
     private List<String> autoActions;
 
+    // AI 노쇼 예측 결과
+    private Double aiNoshowProbability;
+    private String aiRecommendedPolicy;
+    private String aiPolicyReason;
+    private String aiSuspiciousPattern;
+    private String aiDetectionReason;
+
     @Getter
     @Setter
     @Builder

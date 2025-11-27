@@ -339,17 +339,17 @@ public class ReservationService {
         reservationRepository.deleteById(id);
     }
     // -------------------------
-// ⭐ 예약 + 모의 결제 통합 처리
+// ⭐ 예약 + 모의 결제 통합 처리 + AI 노쇼 예측
 // -------------------------
 public Reservation createWithPayment(ReservationFullPayRequest req) {
 
-    // 1. 예약 엔티티 생성
+    // 1. 예약 엔티티 생성 (사장님 승인 대기 상태)
     Reservation reservation = new Reservation();
     reservation.setMemberId(req.getMemberId());
     reservation.setBusinessId(req.getBusinessId());
     reservation.setPeople(req.getPeople());
     reservation.setReservationTime(java.time.LocalDateTime.parse(req.getReservationTime()));
-    reservation.setStatus(ReservationStatus.CONFIRMED);
+    reservation.setStatus(ReservationStatus.PENDING);  // ⭐ 사장님 승인 대기
 
     // 기본적으로 결제 대기
     reservation.setPaymentStatus(PaymentStatus.PENDING);
@@ -357,7 +357,31 @@ public Reservation createWithPayment(ReservationFullPayRequest req) {
     // DB 저장
     Reservation savedReservation = reservationRepository.save(reservation);
 
-    // 2. 모의 결제 처리 (Payment 엔티티 생성)
+    // 2. AI 노쇼 예측 호출 (AI 서버 다운 시에도 예약은 정상 진행)
+    com.olsaram.backend.dto.ai.AiNoshowRequest aiRequest = buildAiNoshowRequest(savedReservation, req);
+    com.olsaram.backend.dto.ai.AiNoshowResponse aiResponse = aiNoshowService.safePredict(aiRequest);
+
+    if (aiResponse != null) {
+        // AI 예측 성공 → 결과를 예약 엔티티에 저장
+        savedReservation.setAiNoshowProbability(aiResponse.getNoshowProbability());
+
+        if (aiResponse.getPolicyRecommendation() != null) {
+            savedReservation.setAiRecommendedPolicy(aiResponse.getPolicyRecommendation().getRecommendedPolicy());
+            savedReservation.setAiPolicyReason(aiResponse.getPolicyRecommendation().getReason());
+        }
+
+        if (aiResponse.getSuspiciousResult() != null) {
+            savedReservation.setAiSuspiciousPattern(aiResponse.getSuspiciousResult().getSuspiciousPattern());
+            savedReservation.setAiDetectionReason(aiResponse.getSuspiciousResult().getDetectionReason());
+        }
+
+        System.out.println("✅ AI 예측 완료: 노쇼확률 " + aiResponse.getNoshowProbability() + "%");
+    } else {
+        // AI 예측 실패 → AI 컬럼은 null 유지, 예약은 정상 진행
+        System.out.println("ℹ️ AI 서버 응답 없음, AI 필드는 null로 유지됩니다.");
+    }
+
+    // 3. 모의 결제 처리 (Payment 엔티티 생성)
     com.olsaram.backend.domain.reservation.Payment payment =
             com.olsaram.backend.domain.reservation.Payment.builder()
                     .reservationId(savedReservation.getId())
@@ -369,11 +393,52 @@ public Reservation createWithPayment(ReservationFullPayRequest req) {
     // PaymentService 사용
     paymentService.createPayment(payment);
 
-    // 3. 결제 완료 상태로 변경
+    // 4. 결제 완료 상태로 변경
     savedReservation.setPaymentStatus(PaymentStatus.PAID);
     reservationRepository.save(savedReservation);
 
     return savedReservation;
+}
+
+/**
+ * AI 노쇼 예측 요청 객체 생성
+ */
+private com.olsaram.backend.dto.ai.AiNoshowRequest buildAiNoshowRequest(
+        Reservation reservation, ReservationFullPayRequest req) {
+
+    // 고객 정보 조회
+    Customer customer = customerRepository.findById(req.getMemberId()).orElse(null);
+
+    // 오늘 예약 목록 조회
+    LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+    LocalDateTime todayEnd = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+
+    List<Reservation> todayReservations = reservationRepository
+            .findByBusinessIdAndReservationTimeBetween(req.getBusinessId(), todayStart, todayEnd);
+
+    List<com.olsaram.backend.dto.ai.AiTodayReservationDto> todayReservationDtos = todayReservations.stream()
+            .map(r -> com.olsaram.backend.dto.ai.AiTodayReservationDto.builder()
+                    .reservationId(r.getId())
+                    .reservationTime(r.getReservationTime().toString())
+                    .partySize(r.getPeople())
+                    .paymentMethod(req.getPaymentMethod())
+                    .build())
+            .toList();
+
+    boolean isSameDayReservation = reservation.getReservationTime()
+            .toLocalDate().equals(LocalDateTime.now().toLocalDate());
+
+    return com.olsaram.backend.dto.ai.AiNoshowRequest.builder()
+            .customerId(req.getMemberId())
+            .reservationTime(req.getReservationTime())
+            .partySize(req.getPeople())
+            .paymentMethod(req.getPaymentMethod())
+            .customerPastNoshowCount(customer != null ? customer.getNoShowCount() : 0)
+            .customerPastReservationCount(customer != null ? customer.getReservationCount() : 0)
+            .reservationChangeCount(0)
+            .isSameDayReservation(isSameDayReservation ? 1 : 0)
+            .todayReservations(todayReservationDtos)
+            .build();
 }
 
     // -------------------------
@@ -463,6 +528,11 @@ public Reservation createWithPayment(ReservationFullPayRequest req) {
                             .riskLevel(riskLevel)
                             .suspiciousPatterns(patterns)
                             .autoActions(actions)
+                            .aiNoshowProbability(reservation.getAiNoshowProbability())
+                            .aiRecommendedPolicy(reservation.getAiRecommendedPolicy())
+                            .aiPolicyReason(reservation.getAiPolicyReason())
+                            .aiSuspiciousPattern(reservation.getAiSuspiciousPattern())
+                            .aiDetectionReason(reservation.getAiDetectionReason())
                             .build();
                 })
                 .sorted(Comparator.comparing(ReservationWithRiskResponse::getRiskScore)) // 위험도 순 정렬

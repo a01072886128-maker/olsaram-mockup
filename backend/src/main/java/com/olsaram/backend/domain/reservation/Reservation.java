@@ -37,6 +37,22 @@ public class Reservation {
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus; // UNPAID, PAID, REFUND
 
+    // AI 노쇼 예측 결과
+    @Column(name = "ai_noshow_probability")
+    private Double aiNoshowProbability;
+
+    @Column(name = "ai_recommended_policy", length = 500)
+    private String aiRecommendedPolicy;
+
+    @Column(name = "ai_policy_reason", length = 1000)
+    private String aiPolicyReason;
+
+    @Column(name = "ai_suspicious_pattern", length = 500)
+    private String aiSuspiciousPattern;
+
+    @Column(name = "ai_detection_reason", length = 1000)
+    private String aiDetectionReason;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

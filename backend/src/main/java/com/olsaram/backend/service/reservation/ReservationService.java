@@ -16,6 +16,8 @@ import com.olsaram.backend.repository.reservation.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import com.olsaram.backend.service.ai.AiNoshowService;
+
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +34,8 @@ public class ReservationService {
     private final PaymentService paymentService;
     private final RiskCalculationService riskCalculationService;
     private final AiNoshowService aiNoshowService;
+
+
 
     // -------------------------
     // CREATE

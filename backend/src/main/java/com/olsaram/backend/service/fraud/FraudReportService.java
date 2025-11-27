@@ -69,10 +69,24 @@ public class FraudReportService {
      */
     @Transactional(readOnly = true)
     public FraudPhoneSearchResponse searchByPhone(String phoneNumber) {
+        log.info("========== 신고 전화번호 조회 시작 ==========");
+        log.info("입력된 전화번호: {}", phoneNumber);
+
         String normalizedPhone = normalizePhoneNumber(phoneNumber);
+        log.info("정규화된 전화번호: {}", normalizedPhone);
+
         List<FraudReport> reports = fraudReportRepository.findByPhoneNumber(normalizedPhone);
+        log.info("조회된 신고 건수: {}", reports.size());
+
+        if (!reports.isEmpty()) {
+            for (FraudReport report : reports) {
+                log.info("  - 신고 ID: {}, DB 전화번호: {}, 상태: {}",
+                         report.getReportId(), report.getPhoneNumber(), report.getStatus());
+            }
+        }
 
         if (reports.isEmpty()) {
+            log.info("신고 이력 없음 - SAFE 응답 반환");
             return FraudPhoneSearchResponse.safe(FraudReportResponse.maskPhoneNumber(normalizedPhone));
         }
 

@@ -1,5 +1,6 @@
 package com.olsaram.backend.domain.business;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"business", "hibernateLazyInitializer", "handler"})
 public class Menu {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

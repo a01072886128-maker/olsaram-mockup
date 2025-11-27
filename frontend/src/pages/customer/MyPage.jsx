@@ -276,7 +276,7 @@ function CustomerMyPage() {
 
             <TabsContent value="settings">
               <Card className="border-slate-200 shadow-sm">
-                <CardContent className="space-y-4 px-4 py-5">
+                <CardContent className="space-y-4 px-5 pt-10 pb-10">
                   {[
                     {
                       title: "개인정보 수정",
@@ -306,7 +306,7 @@ function CustomerMyPage() {
                   ].map((item) => (
                     <div
                       key={item.title}
-                      className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="text-sm font-semibold text-slate-800">{item.title}</p>

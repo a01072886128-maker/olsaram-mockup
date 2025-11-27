@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.math.BigDecimal.ZERO;
+
 @Entity(name = "DomainBusiness")
 @Table(name = "business")
 @Getter
@@ -61,7 +63,7 @@ public class Business {
 
     @Column(name = "average_rating", precision = 3, scale = 2)
     @Builder.Default
-    private BigDecimal averageRating = BigDecimal.ZERO;
+    private BigDecimal averageRating = ZERO;
 
     @Column(name = "review_count")
     @Builder.Default
@@ -88,6 +90,10 @@ public class Business {
     @Column(name = "monthly_revenue")
     @Builder.Default
     private Long monthlyRevenue = 0L;
+
+    @Column(name = "reservation_fee_amount", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal reservationFeeAmount = ZERO;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp

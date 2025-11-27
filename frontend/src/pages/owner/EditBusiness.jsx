@@ -28,6 +28,7 @@ const EditBusiness = () => {
     category: "",
     address: "",
     phone: "",
+    reservationFeeAmount: "",
     description: "",
     businessImageUrl: "",
     openingHours: "",
@@ -43,12 +44,23 @@ const EditBusiness = () => {
     businessAPI
       .getBusinessById(businessId)
       .then((data) => {
+        const reservationFeeAmount =
+          data.reservationFeeAmount ??
+          data.reservationFee ??
+          data.reservation_fee_amount ??
+          data.reservation_fee ??
+          "";
+
         setFormState({
           businessName: data.businessName || "",
           businessNumber: data.businessNumber || "",
           category: data.category || "기타",
           address: data.address || "",
           phone: data.phone || "",
+          reservationFeeAmount:
+            reservationFeeAmount === 0 || reservationFeeAmount
+              ? String(reservationFeeAmount)
+              : "",
           description: data.description || "",
           businessImageUrl: data.businessImageUrl || "",
           openingHours: data.openingHours || "",
@@ -79,6 +91,18 @@ const EditBusiness = () => {
       return;
     }
 
+    const reservationFeeInput = formState.reservationFeeAmount.trim();
+    const reservationFeeAmount =
+      reservationFeeInput === "" ? undefined : Number(reservationFeeInput);
+
+    if (
+      reservationFeeInput &&
+      (Number.isNaN(reservationFeeAmount) || reservationFeeAmount < 0)
+    ) {
+      setErrorMessage("예약 수수료는 0원 이상 금액으로 입력해주세요.");
+      return;
+    }
+
     const payload = {
       owner_id: ownerId,
       business_name: formState.businessName.trim(),
@@ -86,6 +110,7 @@ const EditBusiness = () => {
       category: formState.category,
       address: formState.address.trim(),
       phone: formState.phone.trim(),
+      reservation_fee_amount: reservationFeeAmount,
       description: formState.description.trim(),
       business_image_url: formState.businessImageUrl.trim(),
       opening_hours: formState.openingHours.trim(),
@@ -206,6 +231,26 @@ const EditBusiness = () => {
                 placeholder="예: 02-1234-5678"
                 className="w-full rounded-lg border border-border-color px-4 py-3 text-sm shadow-sm focus:border-primary-green focus:outline-none"
               />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-text-secondary">
+                예약 수수료 기본 금액 (1인 기준)
+              </label>
+              <input
+                type="number"
+                name="reservationFeeAmount"
+                min="0"
+                step="100"
+                inputMode="decimal"
+                value={formState.reservationFeeAmount}
+                onChange={handleChange}
+                placeholder="예: 5000"
+                className="w-full rounded-lg border border-border-color px-4 py-3 text-sm shadow-sm focus:border-primary-green focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-text-secondary">
+                위험도 구간에 따른 0~40% 수수료율이 적용되며, 인원 수만큼 곱해집니다.
+              </p>
             </div>
 
             <div>

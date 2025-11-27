@@ -27,6 +27,7 @@ public class BusinessResponse {
     private Integer reviewCount;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private BigDecimal reservationFeeAmount;
 
     public static BusinessResponse from(Business business) {
         return BusinessResponse.builder()
@@ -44,6 +45,7 @@ public class BusinessResponse {
                 .reviewCount(business.getReviewCount())
                 .latitude(business.getLatitude())
                 .longitude(business.getLongitude())
+                .reservationFeeAmount(business.getReservationFeeAmount())
                 .build();
     }
 }

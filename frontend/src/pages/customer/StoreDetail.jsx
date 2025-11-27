@@ -13,6 +13,7 @@ export default function StoreDetail() {
   const [menus, setMenus] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [paymentResult, setPaymentResult] = useState(null);
 
   // 🔥 로그인한 고객 정보
   const memberId = user?.customerId;
@@ -21,6 +22,12 @@ export default function StoreDetail() {
   const [reservationTime, setReservationTime] = useState("");
   const [people, setPeople] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState(""); // ⭐ 추가
+
+  const formatCurrency = (value) => {
+    const num = Number(value);
+    if (Number.isNaN(num)) return "-";
+    return `${num.toLocaleString("ko-KR")}원`;
+  };
 
   // 모달 상태 관리 (ESC, 스크롤 방지)
   useEffect(() => {
@@ -93,8 +100,23 @@ export default function StoreDetail() {
     };
 
     try {
-      await storeAPI.fullPayReservation(data);
-      alert("예약 및 결제가 완료되었습니다!");
+      const result = await storeAPI.fullPayReservation(data);
+
+      setPaymentResult(result);
+
+      const chargedText = formatCurrency(result?.chargedAmount);
+      const appliedPercent = result?.appliedFeePercent?.toFixed?.(2) ?? "-";
+      const baseAmount = formatCurrency(result?.baseFeeAmount);
+      const riskPercent = result?.riskPercent?.toFixed?.(1) ?? "-";
+      const heads = result?.people ?? Number(people);
+      const chargeCalc = formatCurrency(
+        (result?.baseFeeAmount ?? 0) * heads * ((result?.appliedFeePercent ?? 0) / 100)
+      );
+
+      alert(
+        `예약 및 결제가 완료되었습니다!\n결제 금액: ${chargedText}\n(위험도 기반 수수료율 ${appliedPercent}% × 기본금액 ${baseAmount} × ${heads}인분 = ${chargeCalc})`
+      );
+
       navigate("/customer/nearby");
     } catch (err) {
       alert("예약/결제 오류: " + err.message);
@@ -142,6 +164,11 @@ export default function StoreDetail() {
           </div>
           <div className="text-sm text-primary-green/80">
             예약 시 노쇼 방지 정책이 적용됩니다.
+            {store.reservationFeeAmount != null && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                기본 예약 수수료 {formatCurrency(store.reservationFeeAmount)} / 1인
+              </span>
+            )}
           </div>
         </header>
 
@@ -252,6 +279,16 @@ export default function StoreDetail() {
             >
               예약 및 결제하기
             </button>
+
+            {paymentResult && (
+              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
+                <p className="font-semibold">결제 완료</p>
+                <p className="mt-1">결제 금액: {formatCurrency(paymentResult.chargedAmount)}</p>
+                <p className="mt-1 text-emerald-700/80">
+                  위험도 기반 수수료율 {paymentResult.appliedFeePercent?.toFixed?.(2) ?? 0}% × 기본금액 {formatCurrency(paymentResult.baseFeeAmount)} × 인원 {paymentResult.people ?? people}명
+                </p>
+              </div>
+            )}
           </form>
         </section>
       </div>

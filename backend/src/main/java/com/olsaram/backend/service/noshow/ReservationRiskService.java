@@ -66,7 +66,6 @@ public class ReservationRiskService {
         } else {
 
             int noShowCount = customer.getNoShowCount() != null ? customer.getNoShowCount() : 0;
-            int trustScore = customer.getTrustScore() != null ? customer.getTrustScore() : 100;
             int reservationCount = customer.getReservationCount() != null ? customer.getReservationCount() : 0;
 
             // 규칙 1: 노쇼 이력이 3회 이상 → HIGH
@@ -91,15 +90,7 @@ public class ReservationRiskService {
                 riskFactors.add("노쇼 이력 1회");
             }
 
-            // 규칙 4: 신뢰 점수가 낮은 경우
-            if (trustScore < 70) {
-                riskScore -= 15;
-                riskFactors.add("신뢰 점수 낮음 (" + trustScore + "점)");
-                if (riskLevel.equals("LOW")) {
-                    riskLevel = "MEDIUM";
-                    reason = "고객 신뢰 점수 낮음";
-                }
-            }
+            // 신뢰 점수는 별도 저장하지 않고 위험도(100-신뢰)로 표현하므로 제외
 
             // 규칙 5: 신규 고객 (예약 이력 없음)
             if (reservationCount == 0) {

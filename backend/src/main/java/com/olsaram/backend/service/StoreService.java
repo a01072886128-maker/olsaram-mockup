@@ -115,6 +115,7 @@ public class StoreService {
                 .description(business.getDescription())
                 .latitude(business.getLatitude())
                 .longitude(business.getLongitude())
+                .reservationFeeAmount(business.getReservationFeeAmount())
                 .menus(new ArrayList<>()) // 상세조회때만 채워짐
                 .build();
     }

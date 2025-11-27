@@ -24,6 +24,10 @@ public class ReservationWithRiskResponse {
     private Integer people;
     private String status;
     private String paymentStatus;
+    private Double paymentAmount;
+    private Double baseFeeAmount;
+    private Double appliedFeePercent;
+    private Double riskPercent;
 
     // 고객 이력 정보
     private CustomerRiskData customerData;

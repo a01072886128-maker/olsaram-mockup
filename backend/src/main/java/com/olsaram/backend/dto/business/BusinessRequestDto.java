@@ -39,4 +39,7 @@ public class BusinessRequestDto {
 
     @JsonProperty("opening_hours")
     private String openingHours;
+
+    @JsonProperty("reservation_fee_amount")
+    private String reservationFeeAmount;
 }

@@ -20,6 +20,7 @@ import {
   UserX,
   Zap,
   TrendingUp,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { reservationAPI } from "../../services/reservations";
@@ -48,6 +49,26 @@ const formatTime = (value) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const formatCurrency = (value) => {
+  const num = Number(value);
+  if (Number.isNaN(num)) return "-";
+  return `${num.toLocaleString("ko-KR")}원`;
+};
+
+const formatPercent = (value) => {
+  if (value === null || value === undefined) return "-";
+  const num = Number(value);
+  if (Number.isNaN(num)) return "-";
+  return `${num.toFixed(2)}%`;
+};
+
+const parseRiskPercent = (reservation) => {
+  const raw = reservation?.riskPercent ?? reservation?.risk_percent;
+  const num = Number(raw);
+  if (Number.isNaN(num)) return null;
+  return normalizeNoShowPercentage(num);
 };
 
 const getDateKey = (value) => {
@@ -103,12 +124,24 @@ const normalizeScore = (value) => {
   return Math.max(0, Math.min(100, parsed));
 };
 
+// 단일 위험도 소스: 서버 riskScore → 100-점수, 없으면 riskPercent
+const getDerivedRiskPercent = (reservation) => {
+  const rawScore = reservation?.riskScore;
+  if (rawScore !== undefined && rawScore !== null) {
+    const score = normalizeScore(rawScore);
+    return normalizeNoShowPercentage(100 - score);
+  }
+
+  const parsed = parseRiskPercent(reservation);
+  if (parsed !== null) return normalizeNoShowPercentage(parsed);
+
+  return 0;
+};
+
 const getReservationTrustScore = (reservation) => {
   if (!reservation) return 100;
-  const customerTrust = reservation?.customerData?.trustScore;
-  const fallbackScore = reservation?.trustScore ?? reservation?.riskScore;
-  const candidate = customerTrust ?? fallbackScore ?? 100;
-  return normalizeScore(candidate);
+  const risk = getDerivedRiskPercent(reservation);
+  return normalizeScore(100 - risk);
 };
 
 const getRiskLevelFromTrustScore = (score) => {
@@ -255,9 +288,14 @@ const ReservationCard = ({
   const autoActions = reservation.autoActions || [];
 
   const trustScore = getReservationTrustScore(reservation);
+  const riskPercentValue = getDerivedRiskPercent(reservation);
   const riskLevel = getRiskLevelFromTrustScore(trustScore);
   const riskColor = getRiskColor(riskLevel);
   const riskLabelText = getRiskLabel(riskLevel);
+
+  const baseFeeAmount = reservation.baseFeeAmount ?? 0;
+  const appliedFeePercent = reservation.appliedFeePercent ?? 0;
+  const paymentAmount = reservation.paymentAmount;
 
   const paymentBadge = getPaymentBadge(reservation.paymentStatus);
 
@@ -328,6 +366,12 @@ const ReservationCard = ({
         <span style={{ color: riskColor }} className="font-medium">
           위험도: {trustScore}점 ({riskLabelText})
         </span>
+        {paymentAmount != null && (
+          <span className="flex items-center gap-1 text-emerald-700">
+            <CreditCard className="w-4 h-4" />
+            {formatCurrency(paymentAmount)} ({(riskPercentValue ?? 0).toFixed?.(1)}% → {formatPercent(appliedFeePercent)})
+          </span>
+        )}
       </div>
 
       {/* 상세 정보 (펼쳤을 때만) */}
@@ -368,7 +412,7 @@ const ReservationCard = ({
                     </div>
                     <div className="flex items-center gap-1">
                       <Shield className="w-4 h-4 text-blue-500" />
-                      <span>신뢰점수: {customerData.trustScore || 100}</span>
+                      <span>신뢰점수: {trustScore}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-gray-500" />
@@ -389,6 +433,20 @@ const ReservationCard = ({
                       <li key={idx}>{pattern}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {paymentAmount != null && (
+                <div className="mb-3 p-3 bg-emerald-50 rounded">
+                  <h4 className="text-sm font-semibold text-emerald-800 mb-2 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" /> 위험도 기반 예약 수수료
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-emerald-800">
+                    <div>기본 금액(1인): {formatCurrency(baseFeeAmount)}</div>
+                    <div>위험도: {(riskPercentValue ?? 0).toFixed?.(1)}%</div>
+                    <div>적용 수수료율: {formatPercent(appliedFeePercent)}</div>
+                    <div>결제 금액: {formatCurrency(paymentAmount)}</div>
+                  </div>
                 </div>
               )}
 
@@ -526,13 +584,7 @@ function Reservations() {
     setError(null);
 
     try {
-      let data = [];
-      try {
-        data = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
-      } catch (riskErr) {
-        console.warn("with-risk 예약 조회 실패, 기본 조회로 대체:", riskErr);
-        data = await reservationAPI.getOwnerReservations(ownerId);
-      }
+      const data = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
       const reservationList = Array.isArray(data) ? data : [];
       setReservations(reservationList);
     } catch (err) {

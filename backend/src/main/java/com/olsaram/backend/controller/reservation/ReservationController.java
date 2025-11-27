@@ -5,8 +5,9 @@ import com.olsaram.backend.domain.reservation.Payment;
 import com.olsaram.backend.domain.reservation.Reservation;
 import com.olsaram.backend.domain.reservation.Reward;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
-import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
 import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;
+import com.olsaram.backend.dto.reservation.ReservationPaymentResult;
+import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
 import com.olsaram.backend.dto.reservation.ReservationWithRiskResponse;
 import com.olsaram.backend.repository.BusinessRepository;
 import com.olsaram.backend.service.reservation.PaymentService;
@@ -202,7 +203,7 @@ public class ReservationController {
     // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 
 
     @PostMapping("/reservations/full-pay")
-    public Reservation createWithPayment(@RequestBody ReservationFullPayRequest req) {
+    public ReservationPaymentResult createWithPayment(@RequestBody ReservationFullPayRequest req) {
         return reservationService.createWithPayment(req);
     }
 }

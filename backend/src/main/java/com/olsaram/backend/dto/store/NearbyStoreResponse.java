@@ -27,6 +27,7 @@ public class NearbyStoreResponse {
     private BigDecimal latitude;
     private BigDecimal longitude;
     private List<MenuInfo> menus;
+    private BigDecimal reservationFeeAmount;
 
     @Data
     @Builder

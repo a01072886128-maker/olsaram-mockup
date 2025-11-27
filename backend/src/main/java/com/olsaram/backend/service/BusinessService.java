@@ -9,6 +9,7 @@ import com.olsaram.backend.repository.BusinessRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -101,7 +102,15 @@ public class BusinessService {
             business.setBusinessImageUrl(request.getBusinessImageUrl().trim());
         }
         if (request.getOpeningHours() != null) {
-            business.setOpeningHours(request.getOpeningHours().trim());
+            business.setOpeningHours(normalizeJsonString(request.getOpeningHours()));
+        }
+        if (request.getReservationFeeAmount() != null) {
+            business.setReservationFeeAmount(parseFeeAmount(request.getReservationFeeAmount()));
+        }
+
+        // opening_hours 컬럼이 JSON이므로 빈 문자열을 허용하지 않도록 보정
+        if (business.getOpeningHours() == null || business.getOpeningHours().trim().isEmpty()) {
+            business.setOpeningHours("{}");
         }
 
         Business savedBusiness = businessRepository.save(business);
@@ -145,6 +154,8 @@ public class BusinessService {
         String phone = (request.getPhone() == null || request.getPhone().trim().isEmpty())
                 ? "미등록" : request.getPhone();
 
+        BigDecimal reservationFeeAmount = parseFeeAmount(request.getReservationFeeAmount());
+
         Business business = Business.builder()
                 .businessName(request.getBusinessName())
                 .businessNumber(request.getBusinessNumber())
@@ -153,12 +164,31 @@ public class BusinessService {
                 .phone(phone)
                 .description(request.getDescription())
                 .businessImageUrl(request.getBusinessImageUrl())
-                .openingHours(request.getOpeningHours())
+                .openingHours(normalizeJsonString(request.getOpeningHours()))
+                .reservationFeeAmount(reservationFeeAmount)
                 .build();
 
         owner.addBusiness(business);
         Business savedBusiness = businessRepository.save(business);
 
         return BusinessResponse.from(savedBusiness);
+    }
+
+    private BigDecimal parseFeeAmount(String rawValue) {
+        if (rawValue == null || rawValue.trim().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(rawValue.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("예약 수수료는 금액으로 입력해주세요.");
+        }
+    }
+
+    private String normalizeJsonString(String rawJson) {
+        if (rawJson == null) return "{}";
+        String trimmed = rawJson.trim();
+        if (trimmed.isEmpty()) return "{}";
+        return trimmed;
     }
 }

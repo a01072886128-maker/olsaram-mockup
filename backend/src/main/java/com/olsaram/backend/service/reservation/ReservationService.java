@@ -8,6 +8,7 @@ import com.olsaram.backend.domain.reservation.ReservationStatus;
 import com.olsaram.backend.service.ai.AiNoshowService;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
 import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;
+import com.olsaram.backend.dto.reservation.ReservationPaymentResult;
 import com.olsaram.backend.dto.reservation.ReservationStatusUpdateRequest;
 import com.olsaram.backend.dto.reservation.ReservationWithRiskResponse;
 import com.olsaram.backend.repository.BusinessRepository;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
+
+    private static final double DEFAULT_BASE_AMOUNT_PER_PERSON = 10000.0;
 
     private final ReservationRepository reservationRepository;
     private final BusinessRepository businessRepository;
@@ -347,12 +350,12 @@ public class ReservationService {
     // -------------------------
 // ⭐ 예약 + 모의 결제 통합 처리 + AI 노쇼 예측
 // -------------------------
-public Reservation createWithPayment(ReservationFullPayRequest req) {
+    public ReservationPaymentResult createWithPayment(ReservationFullPayRequest req) {
 
-    // 1. 예약 엔티티 생성 (사장님 승인 대기 상태)
-    Reservation reservation = new Reservation();
-    reservation.setMemberId(req.getMemberId());
-    reservation.setBusinessId(req.getBusinessId());
+        // 1. 예약 엔티티 생성 (사장님 승인 대기 상태)
+        Reservation reservation = new Reservation();
+        reservation.setMemberId(req.getMemberId());
+        reservation.setBusinessId(req.getBusinessId());
     reservation.setPeople(req.getPeople());
     reservation.setReservationTime(java.time.LocalDateTime.parse(req.getReservationTime()));
     reservation.setStatus(ReservationStatus.PENDING);  // ⭐ 사장님 승인 대기
@@ -361,11 +364,14 @@ public Reservation createWithPayment(ReservationFullPayRequest req) {
     reservation.setPaymentStatus(PaymentStatus.PENDING);
 
     // DB 저장
-    Reservation savedReservation = reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
 
-    // 2. AI 노쇼 예측 호출 (AI 서버 다운 시에도 예약은 정상 진행)
-    com.olsaram.backend.dto.ai.AiNoshowRequest aiRequest = buildAiNoshowRequest(savedReservation, req);
-    com.olsaram.backend.dto.ai.AiNoshowResponse aiResponse = aiNoshowService.safePredict(aiRequest);
+        Customer customer = customerRepository.findById(req.getMemberId()).orElse(null);
+        Business business = businessRepository.findById(req.getBusinessId()).orElse(null);
+
+        // 2. AI 노쇼 예측 호출 (AI 서버 다운 시에도 예약은 정상 진행)
+        com.olsaram.backend.dto.ai.AiNoshowRequest aiRequest = buildAiNoshowRequest(savedReservation, req);
+        com.olsaram.backend.dto.ai.AiNoshowResponse aiResponse = aiNoshowService.safePredict(aiRequest);
 
     if (aiResponse != null) {
         // AI 예측 성공 → 결과를 예약 엔티티에 저장
@@ -388,29 +394,59 @@ public Reservation createWithPayment(ReservationFullPayRequest req) {
     }
 
     // 3. 모의 결제 처리 (Payment 엔티티 생성)
-    com.olsaram.backend.domain.reservation.Payment payment =
-            com.olsaram.backend.domain.reservation.Payment.builder()
-                    .reservationId(savedReservation.getId())
-                    .paymentMethod(req.getPaymentMethod())
-                    .amount(0.0)       // 일단 0원 결제
-                    .paidAt(java.time.LocalDateTime.now())
-                    .build();
+        int baseScore = clampScore(customer != null && customer.getTrustScore() != null
+                ? customer.getTrustScore()
+                : riskCalculationService.calculateRiskScore(customer, savedReservation));
+        String riskLevel = riskCalculationService.getRiskLevel(baseScore);
 
-    // PaymentService 사용
-    paymentService.createPayment(payment);
+        double riskPercent = calculateRiskPercent(baseScore);
+        double appliedFeePercent = mapRiskPercentToFeePercent(riskPercent);
 
-    // 4. 결제 완료 상태로 변경
-    savedReservation.setPaymentStatus(PaymentStatus.PAID);
-    reservationRepository.save(savedReservation);
+        double baseFeeAmount = business != null && business.getReservationFeeAmount() != null
+                ? business.getReservationFeeAmount().doubleValue()
+                : DEFAULT_BASE_AMOUNT_PER_PERSON;
 
-    return savedReservation;
+        int headCount = req.getPeople() > 0 ? req.getPeople() : 1;
+        double chargedAmount = Math.max(0.0, baseFeeAmount * (appliedFeePercent / 100.0) * headCount);
+
+        com.olsaram.backend.domain.reservation.Payment payment =
+                com.olsaram.backend.domain.reservation.Payment.builder()
+                        .reservationId(savedReservation.getId())
+                        .paymentMethod(req.getPaymentMethod())
+                        .amount(chargedAmount)
+                        .paidAt(java.time.LocalDateTime.now())
+                        .build();
+
+        // PaymentService 사용
+        paymentService.createPayment(payment);
+
+        // 4. 결제 완료 상태로 변경
+        savedReservation.setPaymentStatus(PaymentStatus.PAID);
+        reservationRepository.save(savedReservation);
+
+        return ReservationPaymentResult.builder()
+                .reservationId(savedReservation.getId())
+                .businessId(savedReservation.getBusinessId())
+                .memberId(savedReservation.getMemberId())
+                .chargedAmount(chargedAmount)
+                .paymentStatus(savedReservation.getPaymentStatus() != null
+                        ? savedReservation.getPaymentStatus().name()
+                        : PaymentStatus.PAID.name())
+                .paymentMethod(req.getPaymentMethod())
+                .baseFeeAmount(baseFeeAmount)
+                .appliedFeePercent(appliedFeePercent)
+                .riskPercent(riskPercent)
+                .people(headCount)
+                .riskScore(baseScore)
+                .riskLevel(riskLevel)
+                .build();
 }
 
 /**
  * AI 노쇼 예측 요청 객체 생성
  */
-private com.olsaram.backend.dto.ai.AiNoshowRequest buildAiNoshowRequest(
-        Reservation reservation, ReservationFullPayRequest req) {
+    private com.olsaram.backend.dto.ai.AiNoshowRequest buildAiNoshowRequest(
+            Reservation reservation, ReservationFullPayRequest req) {
 
     // 고객 정보 조회
     Customer customer = customerRepository.findById(req.getMemberId()).orElse(null);
@@ -491,11 +527,24 @@ private com.olsaram.backend.dto.ai.AiNoshowRequest buildAiNoshowRequest(
                     Customer customer = customerMap.get(reservation.getMemberId());
                     Business business = businessMap.get(reservation.getBusinessId());
 
-                    // 위험도 계산
-                    int riskScore = riskCalculationService.calculateRiskScore(customer, reservation);
-                    String riskLevel = riskCalculationService.getRiskLevel(riskScore);
+                    // 위험도 계산 (결제/표시 동일 기준)
+                    int feeBaseScore = clampScore(customer != null && customer.getTrustScore() != null
+                            ? customer.getTrustScore()
+                            : riskCalculationService.calculateRiskScore(customer, reservation));
+                    String riskLevel = riskCalculationService.getRiskLevel(feeBaseScore);
                     List<String> patterns = riskCalculationService.analyzeSuspiciousPatterns(customer, reservation);
                     List<String> actions = riskCalculationService.getAutoActions(riskLevel, reservation);
+
+                    double baseFeeAmount = business != null && business.getReservationFeeAmount() != null
+                            ? business.getReservationFeeAmount().doubleValue()
+                            : DEFAULT_BASE_AMOUNT_PER_PERSON;
+                    double riskPercent = calculateRiskPercent(feeBaseScore);
+                    double appliedFeePercent = mapRiskPercentToFeePercent(riskPercent);
+                    double estimatedBaseAmount = baseFeeAmount * (reservation.getPeople() != null ? reservation.getPeople() : 1);
+                    double expectedFeeAmount = Math.max(0.0, estimatedBaseAmount * (appliedFeePercent / 100.0));
+
+                    // 화면/통계 일관성을 위해 위험도 기반 새 로직으로 금액을 계산해 표시
+                    Double paidAmount = expectedFeeAmount;
 
                     // 고객 이력 정보 생성
                     ReservationWithRiskResponse.CustomerRiskData customerData = null;
@@ -529,8 +578,12 @@ private com.olsaram.backend.dto.ai.AiNoshowRequest buildAiNoshowRequest(
                             .people(reservation.getPeople())
                             .status(reservation.getStatus() != null ? reservation.getStatus().name() : null)
                             .paymentStatus(reservation.getPaymentStatus() != null ? reservation.getPaymentStatus().name() : null)
+                            .paymentAmount(paidAmount)
+                            .baseFeeAmount(baseFeeAmount)
+                            .appliedFeePercent(appliedFeePercent)
+                            .riskPercent(riskPercent)
                             .customerData(customerData)
-                            .riskScore(riskScore)
+                            .riskScore(feeBaseScore)
                             .riskLevel(riskLevel)
                             .suspiciousPatterns(patterns)
                             .autoActions(actions)
@@ -543,5 +596,23 @@ private com.olsaram.backend.dto.ai.AiNoshowRequest buildAiNoshowRequest(
                 })
                 .sorted(Comparator.comparing(ReservationWithRiskResponse::getRiskScore)) // 위험도 순 정렬
                 .toList();
+    }
+
+    private double calculateRiskPercent(int riskScore) {
+        int normalizedScore = Math.max(0, Math.min(100, riskScore));
+        return 100 - normalizedScore; // 점수가 낮을수록 위험도가 높음
+    }
+
+    private double mapRiskPercentToFeePercent(double riskPercent) {
+        if (riskPercent < 30) return 0.0;          // 0~29.99%
+        if (riskPercent < 50) return 10.0;         // 30~49.99%
+        if (riskPercent < 70) return 20.0;         // 50~69.99%
+        if (riskPercent < 90) return 30.0;         // 70~89.99%
+        return 40.0;                               // 90~100%
+    }
+
+    private int clampScore(Integer score) {
+        if (score == null) return 100;
+        return Math.max(0, Math.min(100, score));
     }
 }

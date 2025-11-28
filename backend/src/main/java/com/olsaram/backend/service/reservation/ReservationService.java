@@ -434,6 +434,13 @@ public class ReservationService {
 
         // 4. 결제 완료 상태로 변경
         savedReservation.setPaymentStatus(PaymentStatus.PAID);
+        // ⭐ 예약 시점 스냅샷 저장 (이후 고객 위험도 변경과 무관하게 유지)
+        savedReservation.setRiskScoreSnapshot(baseScore);
+        savedReservation.setRiskPercentSnapshot(riskPercent);
+        savedReservation.setRiskLevelSnapshot(riskLevel);
+        savedReservation.setAppliedFeePercentSnapshot(appliedFeePercent);
+        savedReservation.setBaseFeeAmountSnapshot(baseFeeAmount);
+        savedReservation.setPaymentAmountSnapshot(chargedAmount);
         reservationRepository.save(savedReservation);
 
         return ReservationPaymentResult.builder()
@@ -539,24 +546,44 @@ public class ReservationService {
                     Customer customer = customerMap.get(reservation.getMemberId());
                     Business business = businessMap.get(reservation.getBusinessId());
 
-                    // 위험도 계산 (결제/표시 동일 기준)
-                    int feeBaseScore = customer != null && customer.getTrustScore() != null
-                            ? clampScore(customer.getTrustScore())
-                            : clampScore(riskCalculationService.calculateRiskScore(customer, reservation));
-                    String riskLevel = riskCalculationService.getRiskLevel(feeBaseScore);
+                    // 위험도 계산 (스냅샷 우선, 없으면 계산)
+                    Integer snapshotScore = reservation.getRiskScoreSnapshot();
+                    Double snapshotPercent = reservation.getRiskPercentSnapshot();
+                    String snapshotLevel = reservation.getRiskLevelSnapshot();
+                    Double snapshotAppliedFee = reservation.getAppliedFeePercentSnapshot();
+                    Double snapshotBaseFee = reservation.getBaseFeeAmountSnapshot();
+                    Double snapshotPaymentAmount = reservation.getPaymentAmountSnapshot();
+
+                    int feeBaseScore = snapshotScore != null
+                            ? clampScore(snapshotScore)
+                            : (customer != null && customer.getTrustScore() != null
+                                ? clampScore(customer.getTrustScore())
+                                : clampScore(riskCalculationService.calculateRiskScore(customer, reservation)));
+
+                    String riskLevel = snapshotLevel != null
+                            ? snapshotLevel
+                            : riskCalculationService.getRiskLevel(feeBaseScore);
                     List<String> patterns = riskCalculationService.analyzeSuspiciousPatterns(customer, reservation);
                     List<String> actions = riskCalculationService.getAutoActions(riskLevel, reservation);
 
-                    double baseFeeAmount = business != null && business.getReservationFeeAmount() != null
-                            ? business.getReservationFeeAmount().doubleValue()
-                            : DEFAULT_BASE_AMOUNT_PER_PERSON;
-                    double riskPercent = calculateRiskPercent(feeBaseScore);
-                    double appliedFeePercent = mapRiskPercentToFeePercent(riskPercent);
+                    double baseFeeAmount = snapshotBaseFee != null
+                            ? snapshotBaseFee
+                            : (business != null && business.getReservationFeeAmount() != null
+                                ? business.getReservationFeeAmount().doubleValue()
+                                : DEFAULT_BASE_AMOUNT_PER_PERSON);
+
+                    double riskPercent = snapshotPercent != null
+                            ? snapshotPercent
+                            : calculateRiskPercent(feeBaseScore);
+
+                    double appliedFeePercent = snapshotAppliedFee != null
+                            ? snapshotAppliedFee
+                            : mapRiskPercentToFeePercent(riskPercent);
                     double estimatedBaseAmount = baseFeeAmount * (reservation.getPeople() != null ? reservation.getPeople() : 1);
                     double expectedFeeAmount = Math.max(0.0, estimatedBaseAmount * (appliedFeePercent / 100.0));
 
-                    // 화면/통계 일관성을 위해 위험도 기반 새 로직으로 금액을 계산해 표시
-                    Double paidAmount = expectedFeeAmount;
+                    // 화면/통계 일관성을 위해 스냅샷 우선 사용
+                    Double paidAmount = snapshotPaymentAmount != null ? snapshotPaymentAmount : expectedFeeAmount;
 
                     // 고객 이력 정보 생성
                     ReservationWithRiskResponse.CustomerRiskData customerData = null;

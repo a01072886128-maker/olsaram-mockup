@@ -53,6 +53,14 @@ public class Reservation {
     @Column(name = "ai_detection_reason", length = 1000)
     private String aiDetectionReason;
 
+    // 예약 시점 위험도/요금 스냅샷 (이후 고객 위험도 변경에 영향받지 않도록 고정)
+    private Integer riskScoreSnapshot;          // 0~100 점수 (100 안전)
+    private Double riskPercentSnapshot;         // 0~100 퍼센트 (높을수록 위험)
+    private String riskLevelSnapshot;           // LOW / MEDIUM / HIGH
+    private Double appliedFeePercentSnapshot;   // 위험도 기반 수수료율
+    private Double baseFeeAmountSnapshot;       // 1인 기준 기본 금액 스냅샷
+    private Double paymentAmountSnapshot;       // 결제 금액 스냅샷
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

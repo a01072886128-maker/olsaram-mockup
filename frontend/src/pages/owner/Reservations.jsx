@@ -198,6 +198,51 @@ const getRiskLabel = (level) => {
 };
 
 /* -------------------------------------------------------------
+   노쇼율 계산 (예약 목록 기반)
+------------------------------------------------------------- */
+const computeNoShowRatesFromReservations = (reservations) => {
+  const stats = new Map();
+
+  reservations.forEach((r) => {
+    const businessId = r.businessId ?? r.business_id;
+    if (!businessId) return;
+
+    const businessName = r.businessName ?? r.business_name ?? "가게";
+    const status = (r.status ?? "").toUpperCase();
+
+    const entry =
+      stats.get(businessId) ||
+      {
+        businessId,
+        businessName,
+        totalReservations: 0,
+        noShowCount: 0,
+        completedCount: 0,
+        pendingCount: 0,
+        canceledCount: 0,
+      };
+
+    entry.totalReservations += 1;
+
+    if (status === "NO_SHOW") entry.noShowCount += 1;
+    else if (status === "COMPLETED") entry.completedCount += 1;
+    else if (status === "CANCELED" || status === "CANCELLED") entry.canceledCount += 1;
+    else if (status === "PENDING" || status === "CONFIRMED") entry.pendingCount += 1;
+
+    stats.set(businessId, entry);
+  });
+
+  return Array.from(stats.values()).map((s) => {
+    const noShowRate = s.totalReservations > 0 ? s.noShowCount / s.totalReservations : 0;
+    return {
+      ...s,
+      noShowRate,
+      noShowPercentage: noShowRate * 100,
+    };
+  });
+};
+
+/* -------------------------------------------------------------
    노쇼율 요약 컴포넌트
 ------------------------------------------------------------- */
 const NoShowSummary = ({ noShowRates, loading }) => {
@@ -603,39 +648,18 @@ function Reservations() {
     loadReservations();
   }, [loadReservations]);
 
-  /* ---------------- 노쇼율 불러오기 ---------------- */
+  /* ---------------- 노쇼율 계산 (예약 데이터 기반) ---------------- */
   useEffect(() => {
-    if (!ownerId) {
+    if (!reservations || reservations.length === 0) {
+      setNoShowRates([]);
       setNoShowLoading(false);
       return;
     }
 
-    let alive = true;
-
-    const loadNoShowRates = async () => {
-      setNoShowLoading(true);
-
-      try {
-        // ⭐ 백엔드에서 노쇼율 조회
-        const data = await reservationAPI.getOwnerNoShowRates(ownerId);
-
-        if (!alive) return;
-
-        const rateList = Array.isArray(data) ? data : [];
-        setNoShowRates(rateList);
-      } catch (err) {
-        console.error("노쇼율 조회 실패:", err);
-      } finally {
-        if (alive) setNoShowLoading(false);
-      }
-    };
-
-    loadNoShowRates();
-
-    return () => {
-      alive = false;
-    };
-  }, [ownerId]);
+    const rates = computeNoShowRatesFromReservations(reservations);
+    setNoShowRates(rates);
+    setNoShowLoading(false);
+  }, [reservations]);
 
   /* ---------------- 예약 상태 변경 ---------------- */
   const handleReservationAction = async (reservationId, updates) => {
@@ -653,12 +677,6 @@ function Reservations() {
       if (updates.status === "NO_SHOW" || updates.status === "COMPLETED") {
         try {
           await loadReservations();
-          try {
-            const noShowData = await reservationAPI.getOwnerNoShowRates(ownerId);
-            setNoShowRates(Array.isArray(noShowData) ? noShowData : []);
-          } catch (refreshError) {
-            console.error("노쇼율 조회 실패:", refreshError);
-          }
         } catch (refreshError) {
           console.error("예약 정보 새로고침 실패:", refreshError);
         }

@@ -118,14 +118,14 @@ const Community = () => {
   /** 게시글 로드 */
   const loadPosts = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/community/owner/all");
+      const res = await fetch("/api/community/owner/all");
       const data = await res.json();
       let converted = convertPostFormat(data);
 
       const withComments = await Promise.all(
         converted.map(async (post) => {
           const c = await fetch(
-            `http://localhost:8080/api/community/comments/owner/${post.id}`
+            `/api/community/comments/owner/${post.id}`
           );
           const list = await c.json();
           return { ...post, comments: list.length };
@@ -186,7 +186,7 @@ const Community = () => {
   /** 댓글 로딩 */
   const loadComments = async (postId) => {
     const res = await fetch(
-      `http://localhost:8080/api/community/comments/owner/${postId}`
+      `/api/community/comments/owner/${postId}`
     );
     setComments(await res.json());
   };
@@ -195,7 +195,7 @@ const Community = () => {
   const handleSubmitComment = async () => {
     if (!commentInput.trim()) return;
 
-    await fetch("http://localhost:8080/api/community/comments/owner", {
+    await fetch("/api/community/comments/owner", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -212,7 +212,7 @@ const Community = () => {
 
   /** 댓글 삭제 */
   const deleteComment = async (commentId) => {
-    await fetch(`http://localhost:8080/api/community/comments/${commentId}`, {
+    await fetch(`/api/community/comments/${commentId}`, {
       method: "DELETE",
     });
     loadComments(selectedPost.id);
@@ -221,7 +221,7 @@ const Community = () => {
 
   /** 조회수 증가 */
   const increaseView = async (id) => {
-    await fetch(`http://localhost:8080/api/community/owner/${id}/view`, {
+    await fetch(`/api/community/owner/${id}/view`, {
       method: "POST",
     });
   };
@@ -240,7 +240,7 @@ const Community = () => {
       )
     );
 
-    await fetch(`http://localhost:8080/api/community/owner/${post.id}/like`, {
+    await fetch(`/api/community/owner/${post.id}/like`, {
       method: "POST",
     });
 
@@ -251,7 +251,7 @@ const Community = () => {
   const deletePost = async (id) => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
 
-    await fetch(`http://localhost:8080/api/community/owner/${id}`, {
+    await fetch(`/api/community/owner/${id}`, {
       method: "DELETE",
     });
 
@@ -285,7 +285,7 @@ const Community = () => {
     };
 
     if (isEditMode) {
-      await fetch(`http://localhost:8080/api/community/owner/${editPostId}`, {
+      await fetch(`/api/community/owner/${editPostId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -296,7 +296,7 @@ const Community = () => {
       return;
     }
 
-    await fetch("http://localhost:8080/api/community/owner", {
+    await fetch("/api/community/owner", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

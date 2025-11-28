@@ -41,7 +41,7 @@ function CustomerMyPage() {
     async function loadReservations() {
       try {
         const res = await fetch(
-          `http://localhost:8080/api/reservations/member/${customerId}`
+          `/api/reservations/member/${customerId}`
         );
         const reservationData = await res.json();
 
@@ -49,7 +49,7 @@ function CustomerMyPage() {
           reservationData.map(async (item) => {
             try {
               const bizRes = await fetch(
-                `http://localhost:8080/api/business/${item.businessId}`
+                `/api/business/${item.businessId}`
               );
               const biz = await bizRes.json();
               return { ...item, businessName: biz.businessName };

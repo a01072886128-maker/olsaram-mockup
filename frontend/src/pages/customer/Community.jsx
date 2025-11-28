@@ -38,13 +38,13 @@ const CustomerCommunity = () => {
   // ---------------------------------------------------------
   const loadPosts = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/community/user/all");
+      const res = await fetch("/api/community/user/all");
       const data = await res.json();
 
       const postsWithComments = await Promise.all(
         data.map(async (p) => {
           const res = await fetch(
-            `http://localhost:8080/api/community/comments/user/${p.id}`
+            `/api/community/comments/user/${p.id}`
           );
           const commentList = await res.json();
 
@@ -85,7 +85,7 @@ const CustomerCommunity = () => {
   const loadComments = async (postId) => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/community/comments/user/${postId}`
+        `/api/community/comments/user/${postId}`
       );
       const data = await res.json();
       setComments(data);
@@ -114,7 +114,7 @@ const CustomerCommunity = () => {
     const content = document.getElementById("comment-input").value;
     if (!content.trim()) return;
 
-    await fetch("http://localhost:8080/api/community/comments/user", {
+    await fetch("/api/community/comments/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -133,7 +133,7 @@ const CustomerCommunity = () => {
   // 댓글 삭제
   // ---------------------------------------------------------
   const handleDeleteComment = async (commentId) => {
-    await fetch(`http://localhost:8080/api/community/comments/${commentId}`, {
+    await fetch(`/api/community/comments/${commentId}`, {
       method: "DELETE",
     });
 
@@ -172,7 +172,7 @@ const CustomerCommunity = () => {
 
       if (editMode) {
         await fetch(
-          `http://localhost:8080/api/community/user/${editTarget.id}`,
+          `/api/community/user/${editTarget.id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -186,7 +186,7 @@ const CustomerCommunity = () => {
           type: "success",
         });
       } else {
-        await fetch("http://localhost:8080/api/community/user", {
+        await fetch("/api/community/user", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -218,7 +218,7 @@ const CustomerCommunity = () => {
   const handleDeletePost = async (id) => {
     if (!window.confirm("삭제하시겠습니까?")) return;
 
-    await fetch(`http://localhost:8080/api/community/user/${id}`, {
+    await fetch(`/api/community/user/${id}`, {
       method: "DELETE",
     });
 

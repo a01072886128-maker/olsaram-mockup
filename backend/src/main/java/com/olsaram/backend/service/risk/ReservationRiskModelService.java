@@ -225,6 +225,7 @@ public class ReservationRiskModelService {
     /**
      * Python 명령어 해석 (가상 환경 자동 감지)
      * Ubuntu 환경에서 venv가 있으면 자동으로 사용
+     * 가상 환경이 없으면 시스템 Python 사용 (시스템 패키지 필요)
      */
     private String resolvePythonCommand(String pythonCommand) {
         Path basePath = Paths.get("").toAbsolutePath().normalize();
@@ -243,8 +244,11 @@ public class ReservationRiskModelService {
             return venvPython.toString();
         }
         
-        // 가상 환경이 없으면 설정된 명령어 사용
-        log.info("✅ 시스템 Python 사용: {}", pythonCommand);
+        // 가상 환경이 없으면 시스템 Python 사용
+        // Ubuntu 환경에서는 시스템 패키지 설치 필요:
+        // sudo apt-get install python3-pandas python3-sklearn python3-joblib
+        log.info("✅ 시스템 Python 사용: {} (가상 환경 없음)", pythonCommand);
+        log.info("ℹ️ Ubuntu 환경에서 시스템 패키지 설치: sudo apt-get install python3-pandas python3-sklearn python3-joblib");
         return pythonCommand;
     }
     

@@ -15,7 +15,7 @@ docker build \
 docker build \
   --file frontend/Dockerfile \
   --tag "$FRONTEND_IMAGE" \
-  .
+  ./frontend
 
 docker push "$BACKEND_IMAGE"
 docker push "$FRONTEND_IMAGE"

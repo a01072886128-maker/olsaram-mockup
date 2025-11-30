@@ -449,11 +449,11 @@ public class ReservationService {
                         .paidAt(java.time.LocalDateTime.now())
                         .build();
 
-        // PaymentService 사용
+        // PaymentService 사용 (결제 대기 상태로 저장)
         paymentService.createPayment(payment);
 
-        // 4. 결제 완료 상태로 변경
-        savedReservation.setPaymentStatus(PaymentStatus.PAID);
+        // 4. 결제 대기 상태로 유지 (토스 페이먼츠 결제 승인 후 PAID로 변경)
+        savedReservation.setPaymentStatus(PaymentStatus.PENDING);
         // ⭐ 예약 시점 스냅샷 저장 (이후 고객 위험도 변경과 무관하게 유지)
         savedReservation.setRiskScoreSnapshot(baseScore);
         savedReservation.setRiskPercentSnapshot(riskPercent);

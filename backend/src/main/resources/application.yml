@@ -66,6 +66,13 @@ ai:
   server:
     url: ${AI_SERVER_URL:https://cecille-distracted-slangily.ngrok-free.dev/predict-all}
 
+# 토스 페이먼츠 설정 (테스트 모드)
+toss:
+  payment:
+    secret-key: ${TOSS_PAYMENT_SECRET_KEY:test_sk_dummy}
+    api-url: https://api.tosspayments.com/v1
+    test-mode: true
+
 ---
 spring:
   config:

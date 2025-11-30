@@ -44,6 +44,8 @@ import CustomerCommunity from "./pages/customer/Community.jsx";
 // ⭐⭐⭐ NEW: 가게 상세 페이지 + 예약 입력 페이지 ⭐⭐⭐
 import StoreDetail from "./pages/customer/StoreDetail";
 import StoreReserve from "./pages/customer/StoreReserve"; // ⭐ 추가됨
+import PaymentSuccess from "./pages/customer/PaymentSuccess";
+import PaymentFail from "./pages/customer/PaymentFail";
 
 function RequireOwnerAuth({ children }) {
   const { status } = useAuth();
@@ -226,6 +228,10 @@ function App() {
             </RequireCustomerAuth>
           }
         />
+
+        {/* 결제 성공/실패 페이지 */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/fail" element={<PaymentFail />} />
 
         {/* 404 페이지 */}
         <Route path="*" element={<Landing />} />

@@ -36,4 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### Python Virtual Environment ###
+venv/
+__pycache__/
+*.pyc
+
 ### 

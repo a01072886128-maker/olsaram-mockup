@@ -70,7 +70,7 @@ ai:
 # 토스 페이먼츠 설정 (테스트 모드)
 toss:
   payment:
-    secret-key: ${TOSS_PAYMENT_SECRET_KEY:test_sk_dummy}
+    secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
     api-url: https://api.tosspayments.com/v1
     test-mode: true
 

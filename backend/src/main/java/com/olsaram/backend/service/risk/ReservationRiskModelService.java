@@ -79,7 +79,9 @@ public class ReservationRiskModelService {
         builder.redirectErrorStream(true);
 
         try {
-            log.debug("Executing ML model script: {}", String.join(" ", command));
+            log.info("🔵 ML 모델 스크립트 실행 시작 - 명령어: {}", String.join(" ", command));
+            log.info("🔵 작업 디렉토리: {}", Paths.get("").toAbsolutePath().normalize());
+            
             Process process = builder.start();
             byte[] rawOutput = process.getInputStream().readAllBytes();
             int exitCode = process.waitFor();
@@ -87,13 +89,22 @@ public class ReservationRiskModelService {
 
             if (exitCode != 0) {
                 log.error("❌ ML 모델 스크립트 실행 실패 - 종료 코드: {}, 출력: {}", exitCode, output);
-                log.error("실행 명령어: {}", String.join(" ", command));
+                log.error("❌ 실행 명령어: {}", String.join(" ", command));
+                log.error("❌ 작업 디렉토리: {}", Paths.get("").toAbsolutePath().normalize());
+                log.error("❌ Python 명령어 경로: {}", properties.getPythonCommand());
+                
+                // 스크립트 경로 확인
+                Path scriptPath = Paths.get(resolvePath(properties.getScriptPath()));
+                Path modelPath = Paths.get(resolvePath(properties.getModelPath()));
+                log.error("❌ 스크립트 파일 존재 여부: {}, 경로: {}", scriptPath.toFile().exists(), scriptPath);
+                log.error("❌ 모델 파일 존재 여부: {}, 경로: {}", modelPath.toFile().exists(), modelPath);
+                
                 return Optional.empty();
             }
 
             if (output.isEmpty()) {
                 log.error("❌ ML 모델 스크립트가 출력을 반환하지 않았습니다. 종료 코드: {}", exitCode);
-                log.error("실행 명령어: {}", String.join(" ", command));
+                log.error("❌ 실행 명령어: {}", String.join(" ", command));
                 return Optional.empty();
             }
 

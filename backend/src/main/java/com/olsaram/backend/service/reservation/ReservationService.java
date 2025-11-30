@@ -814,7 +814,8 @@ public class ReservationService {
             throw e;
         } catch (Exception e) {
             String errorMsg = String.format(
-                    "ML 모델 실행 중 예상치 못한 오류가 발생했습니다. 예약ID: %d, 오류: %s",
+                    "ML 모델 실행 중 예상치 못한 오류가 발생했습니다. 예약ID: %d, 오류: %s. " +
+                    "클라우드 환경에서는 Python 설치 여부, 스크립트/모델 파일 경로, 파일 권한을 확인해주세요.",
                     reservation.getId(), e.getMessage()
             );
             log.error("❌ ML 모델 예측 실패 - {}", errorMsg, e);

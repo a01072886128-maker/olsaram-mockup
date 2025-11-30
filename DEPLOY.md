@@ -8,12 +8,16 @@
 # 레지스트리 주소 설정 (예: allsaram.kr.ncr.ntruss.com)
 REGISTRY="allsaram.kr.ncr.ntruss.com"
 
+# 카카오 맵 API 키 설정 (선택사항, 없으면 빌드 시 카카오 맵이 작동하지 않음)
+export VITE_KAKAO_MAP_APP_KEY="your_kakao_map_key_here"
+
 # 이미지 빌드 및 푸시
 ./scripts/docker-build-push.sh "$REGISTRY" latest
 ```
 
 이 과정에서:
 - Backend Dockerfile이 Python 패키지(pandas, scikit-learn, joblib)를 자동으로 설치합니다
+- Frontend Dockerfile이 카카오 맵 API 키를 빌드 타임에 포함시킵니다
 - 이미지가 레지스트리에 푸시됩니다
 
 ### 2. 클라우드 서버에서 이미지 pull 및 실행

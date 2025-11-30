@@ -5,7 +5,6 @@ import com.olsaram.backend.domain.customer.Customer;
 import com.olsaram.backend.domain.reservation.PaymentStatus;
 import com.olsaram.backend.domain.reservation.Reservation;
 import com.olsaram.backend.domain.reservation.ReservationStatus;
-import com.olsaram.backend.service.ai.AiNoshowService;
 import com.olsaram.backend.dto.reservation.OwnerReservationResponse;
 import com.olsaram.backend.dto.reservation.ReservationFullPayRequest;
 import com.olsaram.backend.dto.reservation.ReservationPaymentResult;
@@ -14,7 +13,11 @@ import com.olsaram.backend.dto.reservation.ReservationWithRiskResponse;
 import com.olsaram.backend.repository.BusinessRepository;
 import com.olsaram.backend.repository.CustomerRepository;
 import com.olsaram.backend.repository.reservation.ReservationRepository;
+import com.olsaram.backend.service.ai.AiNoshowService;
+import com.olsaram.backend.service.risk.ReservationRiskModelService;
+import com.olsaram.backend.service.risk.ReservationRiskPrediction;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReservationService {
 
     private static final double DEFAULT_BASE_AMOUNT_PER_PERSON = 10000.0;
@@ -36,6 +40,7 @@ public class ReservationService {
     private final PaymentService paymentService;
     private final RiskCalculationService riskCalculationService;
     private final AiNoshowService aiNoshowService;
+    private final ReservationRiskModelService reservationRiskModelService;
 
 
 
@@ -43,7 +48,10 @@ public class ReservationService {
     // CREATE
     // -------------------------
     public Reservation createReservation(Reservation reservation) {
-        return reservationRepository.save(reservation);
+        // ⭐ customer 예약이 아닌 경우 ML 모델 실행하지 않음
+        // customer 예약은 createWithPayment를 통해 처리됨
+        Reservation savedReservation = reservationRepository.save(reservation);
+        return savedReservation;
     }
 
     // -------------------------
@@ -398,20 +406,22 @@ public class ReservationService {
             savedReservation.setAiDetectionReason(aiResponse.getSuspiciousResult().getDetectionReason());
         }
 
-        System.out.println("✅ AI 예측 완료: 노쇼확률 " + aiResponse.getNoshowProbability() + "%");
+        log.info("AI noshow prediction success probability={}%", aiResponse.getNoshowProbability());
     } else {
         // AI 예측 실패 → AI 컬럼은 null 유지, 예약은 정상 진행
-        System.out.println("ℹ️ AI 서버 응답 없음, AI 필드는 null로 유지됩니다.");
+        log.info("AI noshow server response missing; skipping AI fields");
     }
 
     // 3. 모의 결제 처리 (Payment 엔티티 생성)
-        int trustScoreValue = customer != null && customer.getTrustScore() != null
-                ? clampScore(customer.getTrustScore())
-                : clampScore(riskCalculationService.calculateRiskScore(customer, savedReservation));
-        int baseScore = trustScoreValue;
-        String riskLevel = riskCalculationService.getRiskLevel(baseScore);
+        String paymentMethod = StringUtils.hasText(req.getPaymentMethod())
+                ? req.getPaymentMethod()
+                : "CARD";
 
-        double riskPercent = calculateRiskPercent(baseScore);
+        // ⭐ ML 모델을 필수로 사용하여 위험도 계산
+        RiskSnapshot paymentSnapshot = applyMlRiskModel(customer, savedReservation, paymentMethod);
+        int baseScore = paymentSnapshot.score();
+        double riskPercent = paymentSnapshot.percent();
+        String riskLevel = paymentSnapshot.level();
         double appliedFeePercent = mapRiskPercentToFeePercent(riskPercent);
 
         double baseFeeAmount = business != null && business.getReservationFeeAmount() != null
@@ -420,6 +430,11 @@ public class ReservationService {
 
         int headCount = req.getPeople() > 0 ? req.getPeople() : 1;
         double chargedAmount = Math.max(0.0, baseFeeAmount * (appliedFeePercent / 100.0) * headCount);
+
+        // ⭐ ML 모델 사용 정보 로깅
+        log.info("✅ 노쇼 감지 ML 모델 적용 성공 - 예약ID: {}, 위험도 레벨: {}, 위험도 퍼센트: {}%, 위험도 점수: {}, 예약금: {}원",
+                savedReservation.getId(), paymentSnapshot.mlModelRiskLevel(), 
+                paymentSnapshot.mlModelRiskPercent(), baseScore, chargedAmount);
 
         com.olsaram.backend.domain.reservation.Payment payment =
                 com.olsaram.backend.domain.reservation.Payment.builder()
@@ -441,6 +456,10 @@ public class ReservationService {
         savedReservation.setAppliedFeePercentSnapshot(appliedFeePercent);
         savedReservation.setBaseFeeAmountSnapshot(baseFeeAmount);
         savedReservation.setPaymentAmountSnapshot(chargedAmount);
+        // ⭐ ML 모델 결과 저장
+        savedReservation.setMlModelUsed(paymentSnapshot.mlModelUsed());
+        savedReservation.setMlModelRiskLevel(paymentSnapshot.mlModelRiskLevel());
+        savedReservation.setMlModelRiskPercent(paymentSnapshot.mlModelRiskPercent());
         reservationRepository.save(savedReservation);
 
         return ReservationPaymentResult.builder()
@@ -458,6 +477,10 @@ public class ReservationService {
                 .people(headCount)
                 .riskScore(baseScore)
                 .riskLevel(riskLevel)
+                .mlModelUsed(paymentSnapshot.mlModelUsed())
+                .mlModelResult(paymentSnapshot.mlModelResult())
+                .mlModelRiskLevel(paymentSnapshot.mlModelRiskLevel())
+                .mlModelRiskPercent(paymentSnapshot.mlModelRiskPercent())
                 .build();
 }
 
@@ -564,7 +587,6 @@ public class ReservationService {
                             ? snapshotLevel
                             : riskCalculationService.getRiskLevel(feeBaseScore);
                     List<String> patterns = riskCalculationService.analyzeSuspiciousPatterns(customer, reservation);
-                    List<String> actions = riskCalculationService.getAutoActions(riskLevel, reservation);
 
                     double baseFeeAmount = snapshotBaseFee != null
                             ? snapshotBaseFee
@@ -627,12 +649,15 @@ public class ReservationService {
                             .riskScore(feeBaseScore)
                             .riskLevel(riskLevel)
                             .suspiciousPatterns(patterns)
-                            .autoActions(actions)
                             .aiNoshowProbability(reservation.getAiNoshowProbability())
                             .aiRecommendedPolicy(reservation.getAiRecommendedPolicy())
                             .aiPolicyReason(reservation.getAiPolicyReason())
                             .aiSuspiciousPattern(reservation.getAiSuspiciousPattern())
                             .aiDetectionReason(reservation.getAiDetectionReason())
+                            // ⭐ ML 모델 결과 (DB에 저장된 값)
+                            .mlModelUsed(reservation.getMlModelUsed())
+                            .mlModelRiskLevel(reservation.getMlModelRiskLevel())
+                            .mlModelRiskPercent(reservation.getMlModelRiskPercent())
                             .build();
                 })
                 .sorted(Comparator.comparing(ReservationWithRiskResponse::getRiskScore)) // 위험도 순 정렬
@@ -652,8 +677,109 @@ public class ReservationService {
         return 40.0;                               // 90~100%
     }
 
+    private double mapMlLabelToRiskPercent(String label) {
+        if (!StringUtils.hasText(label)) return -1;
+        String normalized = label.toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "high" -> 85.0;
+            case "medium" -> 55.0;
+            case "low" -> 25.0;
+            default -> -1;
+        };
+    }
+
+    private String mapMlLabelToLegacyLevel(String label, String fallback) {
+        if (!StringUtils.hasText(label)) return fallback;
+        return switch (label.toLowerCase(Locale.ROOT)) {
+            case "high" -> "DANGER";
+            case "medium" -> "CAUTION";
+            case "low" -> "SAFE";
+            default -> fallback;
+        };
+    }
+
     private int clampScore(Integer score) {
         if (score == null) return 100;
         return Math.max(0, Math.min(100, score));
+    }
+
+    /**
+     * ⭐ ML 모델을 필수로 사용하여 위험도를 계산합니다.
+     * ML 모델이 실패하면 예외를 던집니다.
+     */
+    private RiskSnapshot applyMlRiskModel(
+            Customer customer,
+            Reservation reservation,
+            String paymentMethod
+    ) {
+        try {
+            Optional<ReservationRiskPrediction> mlPrediction =
+                    reservationRiskModelService.predict(customer, reservation, paymentMethod);
+
+            if (mlPrediction.isEmpty()) {
+                String errorMsg = String.format(
+                        "ML 모델 예측에 실패했습니다. 예약ID: %d, 고객ID: %s, 예약시간: %s. " +
+                        "ML 모델 설정이 활성화되어 있는지, Python 스크립트가 정상적으로 실행되는지 확인해주세요.",
+                        reservation.getId(),
+                        customer != null ? String.valueOf(customer.getCustomerId()) : "null",
+                        reservation.getReservationTime() != null ? reservation.getReservationTime().toString() : "null"
+                );
+                log.error("❌ ML 모델 예측 실패 - {}", errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            ReservationRiskPrediction prediction = mlPrediction.get();
+            String mlRiskLevel = prediction.getRiskLevel();
+            
+            if (!StringUtils.hasText(mlRiskLevel)) {
+                String errorMsg = String.format(
+                        "ML 모델이 유효한 위험도 레벨을 반환하지 않았습니다. 예약ID: %d",
+                        reservation.getId()
+                );
+                log.error("❌ ML 모델 예측 실패 - {}", errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            double mlPercent = mapMlLabelToRiskPercent(mlRiskLevel);
+            if (mlPercent < 0) {
+                String errorMsg = String.format(
+                        "ML 모델이 알 수 없는 위험도 레벨을 반환했습니다: %s (예약ID: %d). " +
+                        "예상되는 값: high, medium, low",
+                        mlRiskLevel, reservation.getId()
+                );
+                log.error("❌ ML 모델 예측 실패 - {}", errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            double adjustedPercent = Math.max(0, Math.min(100, mlPercent));
+            int score = clampScore((int) Math.round(100 - adjustedPercent));
+            String level = mapMlLabelToLegacyLevel(mlRiskLevel, "SAFE");
+            
+            log.info("✅ ML 모델 적용 성공 - 예약ID: {}, 위험도 레벨: {}, 위험도 퍼센트: {}%, 위험도 점수: {}, 결제수단: {}",
+                    reservation.getId(), mlRiskLevel, adjustedPercent, score, paymentMethod);
+            
+            return new RiskSnapshot(score, adjustedPercent, level, true, "SUCCESS", mlRiskLevel, adjustedPercent);
+        } catch (RuntimeException e) {
+            // 이미 로깅된 예외는 그대로 재던지기
+            throw e;
+        } catch (Exception e) {
+            String errorMsg = String.format(
+                    "ML 모델 실행 중 예상치 못한 오류가 발생했습니다. 예약ID: %d, 오류: %s",
+                    reservation.getId(), e.getMessage()
+            );
+            log.error("❌ ML 모델 예측 실패 - {}", errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        }
+    }
+
+    private record RiskSnapshot(
+            int score, 
+            double percent, 
+            String level,
+            Boolean mlModelUsed,
+            String mlModelResult,
+            String mlModelRiskLevel,
+            Double mlModelRiskPercent
+    ) {
     }
 }

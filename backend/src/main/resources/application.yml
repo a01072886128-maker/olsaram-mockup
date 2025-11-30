@@ -56,6 +56,12 @@ kakao:
   api:
     key: ${KAKAO_REST_API_KEY:4d8d4fab8995bb493fbf0dcdc3d4da5b}
 
+risk-model:
+  enabled: true
+  python-command: python3
+  script-path: scripts/predict_reservation_risk.py
+  model-path: models/reservation_risk_model.pkl
+
 ai:
   server:
     url: ${AI_SERVER_URL:https://cecille-distracted-slangily.ngrok-free.dev/predict-all}

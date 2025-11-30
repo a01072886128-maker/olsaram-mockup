@@ -20,4 +20,10 @@ public class ReservationPaymentResult {
     private Integer people;
     private Integer riskScore;
     private String riskLevel;
+    
+    // ⭐ ML 모델 사용 정보
+    private Boolean mlModelUsed;
+    private String mlModelResult; // "SUCCESS", "FAILED", "NOT_AVAILABLE"
+    private String mlModelRiskLevel; // ML 모델이 예측한 위험도 레벨
+    private Double mlModelRiskPercent; // ML 모델이 예측한 위험도 퍼센트
 }

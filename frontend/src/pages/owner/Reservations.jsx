@@ -18,7 +18,6 @@ import {
   Phone,
   Star,
   UserX,
-  Zap,
   TrendingUp,
   CreditCard,
 } from "lucide-react";
@@ -334,7 +333,6 @@ const ReservationCard = ({
 
   const customerData = reservation.customerData || {};
   const suspiciousPatterns = reservation.suspiciousPatterns || [];
-  const autoActions = reservation.autoActions || [];
 
   // 위험도는 customer.trustScore를 100 - trustScore로 계산한 값으로 통일
   const riskPercentValue = getDerivedRiskPercent(reservation);
@@ -500,22 +498,6 @@ const ReservationCard = ({
                 </div>
               )}
 
-              {/* 자동 조치 사항 */}
-              {autoActions.length > 0 && (
-                <div className="mb-3 p-3 bg-blue-50 rounded">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-500" /> ⚙️ 자동 조치
-                  </h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    {autoActions.map((action, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        {action}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
 
               {/* 액션 버튼 */}
               <div className="flex gap-2 pt-2 flex-wrap">
@@ -623,6 +605,28 @@ function Reservations() {
   const [activeTab, setActiveTab] = useState("all");
 
   /* ---------------- 예약 불러오기 (위험도 포함 → 실패 시 기본) ---------------- */
+  const logRiskDiagnostics = (items = []) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      console.info("[RiskModel] No reservations to log.");
+      return;
+    }
+
+    const summary = items.map((r) => ({
+      id: r.id,
+      business: r.businessName ?? r.business_name ?? "-",
+      riskLevel: r.riskLevel ?? r.risk_level ?? "-",
+      riskPercent: r.riskPercent ?? r.risk_percent ?? "-",
+      riskScore: r.riskScore ?? r.risk_score ?? "-",
+      payment: r.paymentAmount ?? r.payment_amount ?? "-",
+    }));
+
+    console.groupCollapsed(
+      `[RiskModel] ${summary.length} reservations fetched @ ${new Date().toLocaleString()}`
+    );
+    console.table(summary);
+    console.groupEnd();
+  };
+
   const loadReservations = useCallback(async () => {
     if (!ownerId) {
       setReservations([]);
@@ -637,6 +641,7 @@ function Reservations() {
       const data = await reservationAPI.getOwnerReservationsWithRisk(ownerId);
       const reservationList = Array.isArray(data) ? data : [];
       setReservations(reservationList);
+      logRiskDiagnostics(reservationList);
     } catch (err) {
       setError(err?.message || "예약 정보를 불러오지 못했습니다.");
     } finally {

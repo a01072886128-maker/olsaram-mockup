@@ -204,6 +204,20 @@ public class ReservationController {
 
     @PostMapping("/reservations/full-pay")
     public ReservationPaymentResult createWithPayment(@RequestBody ReservationFullPayRequest req) {
-        return reservationService.createWithPayment(req);
+        try {
+            return reservationService.createWithPayment(req);
+        } catch (RuntimeException e) {
+            // ML 모델 실패 등 예외를 더 명확하게 전달
+            System.err.println("=== 예약 생성 실패 ===");
+            System.err.println("에러 메시지: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("예약 생성 실패: " + e.getMessage(), e);
+        } catch (Exception e) {
+            System.err.println("=== 예약 생성 중 예외 발생 ===");
+            System.err.println("예외 타입: " + e.getClass().getName());
+            System.err.println("에러 메시지: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("예약 생성 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
     }
 }

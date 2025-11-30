@@ -61,6 +61,16 @@ public class Reservation {
     private Double baseFeeAmountSnapshot;       // 1인 기준 기본 금액 스냅샷
     private Double paymentAmountSnapshot;       // 결제 금액 스냅샷
 
+    // ⭐ ML 모델 예측 결과 (customer 예약 시 저장)
+    @Column(name = "ml_model_risk_level", length = 50)
+    private String mlModelRiskLevel;            // ML 모델이 예측한 위험도 레벨 (high, medium, low)
+    
+    @Column(name = "ml_model_risk_percent")
+    private Double mlModelRiskPercent;          // ML 모델이 예측한 위험도 퍼센트
+    
+    @Column(name = "ml_model_used")
+    private Boolean mlModelUsed;                 // ML 모델 사용 여부
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

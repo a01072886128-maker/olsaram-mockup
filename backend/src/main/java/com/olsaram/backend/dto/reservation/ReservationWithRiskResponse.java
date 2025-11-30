@@ -36,7 +36,6 @@ public class ReservationWithRiskResponse {
     private Integer riskScore;
     private String riskLevel;  // SAFE, CAUTION, DANGER
     private List<String> suspiciousPatterns;
-    private List<String> autoActions;
 
     // AI 노쇼 예측 결과
     private Double aiNoshowProbability;
@@ -44,6 +43,11 @@ public class ReservationWithRiskResponse {
     private String aiPolicyReason;
     private String aiSuspiciousPattern;
     private String aiDetectionReason;
+
+    // ⭐ ML 모델 예측 결과 (DB에 저장된 값)
+    private Boolean mlModelUsed;
+    private String mlModelRiskLevel;      // ML 모델이 예측한 위험도 레벨 (high, medium, low)
+    private Double mlModelRiskPercent;    // ML 모델이 예측한 위험도 퍼센트
 
     @Getter
     @Setter

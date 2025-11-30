@@ -18,7 +18,6 @@ import {
   Phone,
   Star,
   UserX,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { reservationAPI } from "../../services/reservations";
@@ -294,7 +293,6 @@ const ReservationCard = ({
   const riskScore = calculateRiskScore(customerData, reservation);
   const risk = getRiskLevel(riskScore);
   const patterns = analyzeSuspiciousPatterns(customerData, reservation);
-  const autoActions = getAutoActions(risk.level, reservation);
 
   const paymentBadge = getPaymentBadge(reservation.paymentStatus);
 
@@ -429,22 +427,6 @@ const ReservationCard = ({
                 </div>
               )}
 
-              {/* 자동 조치 사항 */}
-              {autoActions.length > 0 && (
-                <div className="mb-3 p-3 bg-blue-50 rounded">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-500" /> ⚙️ 자동 조치
-                  </h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    {autoActions.map((action, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        {action}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
 
               {/* 액션 버튼 */}
               <div className="flex gap-2 pt-2">

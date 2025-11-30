@@ -64,21 +64,41 @@ public class ReservationRiskModelService {
         Path scriptFile = Paths.get(scriptPath);
         Path modelFile = Paths.get(modelPath);
         
+        log.info("🔍 ML 모델 파일 확인 - 스크립트: {}, 모델: {}", scriptPath, modelPath);
+        log.info("🔍 작업 디렉토리: {}", Paths.get("").toAbsolutePath().normalize());
+        
         if (!scriptFile.toFile().exists()) {
             log.error("❌ ML 모델 스크립트 파일을 찾을 수 없습니다: {}", scriptPath);
             log.error("❌ 작업 디렉토리: {}", Paths.get("").toAbsolutePath().normalize());
+            log.error("❌ 현재 디렉토리 파일 목록: {}", 
+                    java.util.Arrays.toString(Paths.get("").toFile().list()));
             return Optional.empty();
         }
         
         if (!modelFile.toFile().exists()) {
             log.error("❌ ML 모델 파일을 찾을 수 없습니다: {}", modelPath);
             log.error("❌ 작업 디렉토리: {}", Paths.get("").toAbsolutePath().normalize());
+            log.error("❌ 현재 디렉토리 파일 목록: {}", 
+                    java.util.Arrays.toString(Paths.get("").toFile().list()));
             return Optional.empty();
         }
         
         // 실행 권한 확인 (스크립트 파일인 경우)
         if (!scriptFile.toFile().canRead()) {
             log.error("❌ ML 모델 스크립트 파일을 읽을 수 없습니다: {}", scriptPath);
+            log.error("❌ 파일 권한: 읽기={}, 쓰기={}, 실행={}", 
+                    scriptFile.toFile().canRead(), 
+                    scriptFile.toFile().canWrite(), 
+                    scriptFile.toFile().canExecute());
+            return Optional.empty();
+        }
+        
+        // Python 명령어 확인 및 가상 환경 자동 감지 (Ubuntu 환경)
+        String pythonCmd = resolvePythonCommand(properties.getPythonCommand());
+        if (!isPythonAvailable(pythonCmd)) {
+            log.error("❌ Python 명령어를 찾을 수 없습니다: {}", pythonCmd);
+            log.error("❌ Ubuntu 환경에서 Python3 설치 확인: sudo apt-get install python3");
+            log.error("❌ 가상 환경 확인: backend/venv/bin/python3");
             return Optional.empty();
         }
         
@@ -200,5 +220,56 @@ public class ReservationRiskModelService {
         }
         
         return resolvedStr;
+    }
+    
+    /**
+     * Python 명령어 해석 (가상 환경 자동 감지)
+     * Ubuntu 환경에서 venv가 있으면 자동으로 사용
+     */
+    private String resolvePythonCommand(String pythonCommand) {
+        Path basePath = Paths.get("").toAbsolutePath().normalize();
+        Path venvPython;
+        
+        // backend 디렉토리 확인
+        if (basePath.endsWith("backend")) {
+            venvPython = basePath.resolve("venv/bin/python3");
+        } else {
+            venvPython = basePath.resolve("backend/venv/bin/python3");
+        }
+        
+        // 가상 환경의 Python이 존재하면 사용
+        if (venvPython.toFile().exists() && venvPython.toFile().canExecute()) {
+            log.info("✅ 가상 환경 Python 사용: {}", venvPython);
+            return venvPython.toString();
+        }
+        
+        // 가상 환경이 없으면 설정된 명령어 사용
+        log.info("✅ 시스템 Python 사용: {}", pythonCommand);
+        return pythonCommand;
+    }
+    
+    /**
+     * Python 명령어 사용 가능 여부 확인 (Ubuntu 환경)
+     */
+    private boolean isPythonAvailable(String pythonCommand) {
+        try {
+            ProcessBuilder checkBuilder = new ProcessBuilder(pythonCommand, "--version");
+            checkBuilder.redirectErrorStream(true);
+            Process checkProcess = checkBuilder.start();
+            int exitCode = checkProcess.waitFor();
+            
+            if (exitCode == 0) {
+                byte[] output = checkProcess.getInputStream().readAllBytes();
+                String version = new String(output, StandardCharsets.UTF_8).trim();
+                log.info("✅ Python 확인 성공 - 명령어: {}, 버전: {}", pythonCommand, version);
+                return true;
+            } else {
+                log.warn("⚠️ Python 명령어 확인 실패 - 명령어: {}, 종료 코드: {}", pythonCommand, exitCode);
+                return false;
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Python 명령어 확인 중 오류 - 명령어: {}, 오류: {}", pythonCommand, e.getMessage());
+            return false;
+        }
     }
 }

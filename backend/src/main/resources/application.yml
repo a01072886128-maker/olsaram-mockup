@@ -58,7 +58,8 @@ kakao:
 
 risk-model:
   enabled: true
-  python-command: python3
+  # Ubuntu 환경: 가상 환경의 Python 사용 (venv가 있으면 자동으로 사용, 없으면 python3 사용)
+  python-command: ${RISK_MODEL_PYTHON_COMMAND:python3}
   script-path: scripts/predict_reservation_risk.py
   model-path: models/reservation_risk_model.pkl
 

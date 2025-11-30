@@ -86,6 +86,11 @@ public class ReservationService {
 
         List<Reservation> reservations = reservationRepository.findByBusinessIdIn(businessIds);
 
+        // ⭐ ML 모델이 실행된 예약만 필터링 (mlModelUsed가 true인 예약만)
+        reservations = reservations.stream()
+                .filter(reservation -> reservation.getMlModelUsed() != null && reservation.getMlModelUsed())
+                .toList();
+
         Map<Long, Business> businessMap = businesses.stream()
                 .collect(Collectors.toMap(
                         Business::getBusinessId,
@@ -542,6 +547,11 @@ public class ReservationService {
 
         List<Reservation> reservations = reservationRepository.findByBusinessIdIn(businessIds);
 
+        // ⭐ ML 모델이 실행된 예약만 필터링 (mlModelUsed가 true인 예약만)
+        reservations = reservations.stream()
+                .filter(reservation -> reservation.getMlModelUsed() != null && reservation.getMlModelUsed())
+                .toList();
+
         Map<Long, Business> businessMap = businesses.stream()
                 .collect(Collectors.toMap(
                         Business::getBusinessId,
@@ -569,43 +579,82 @@ public class ReservationService {
                     Customer customer = customerMap.get(reservation.getMemberId());
                     Business business = businessMap.get(reservation.getBusinessId());
 
-                    // 위험도 계산 (스냅샷 우선, 없으면 계산)
-                    Integer snapshotScore = reservation.getRiskScoreSnapshot();
-                    Double snapshotPercent = reservation.getRiskPercentSnapshot();
-                    String snapshotLevel = reservation.getRiskLevelSnapshot();
-                    Double snapshotAppliedFee = reservation.getAppliedFeePercentSnapshot();
-                    Double snapshotBaseFee = reservation.getBaseFeeAmountSnapshot();
-                    Double snapshotPaymentAmount = reservation.getPaymentAmountSnapshot();
+                    // ⭐ ML 모델 결과를 우선 사용하여 위험도 계산
+                    String mlModelRiskLevel = reservation.getMlModelRiskLevel();
+                    Double mlModelRiskPercent = reservation.getMlModelRiskPercent();
+                    
+                    int feeBaseScore;
+                    double riskPercent;
+                    String riskLevel;
+                    double appliedFeePercent;
+                    double baseFeeAmount;
+                    double paidAmount;
 
-                    int feeBaseScore = snapshotScore != null
-                            ? clampScore(snapshotScore)
-                            : (customer != null && customer.getTrustScore() != null
-                                ? clampScore(customer.getTrustScore())
-                                : clampScore(riskCalculationService.calculateRiskScore(customer, reservation)));
+                    // ML 모델 결과가 있으면 ML 모델 결과를 사용
+                    if (mlModelRiskLevel != null && mlModelRiskPercent != null) {
+                        // ML 모델 결과를 기반으로 계산
+                        riskPercent = mlModelRiskPercent;
+                        riskLevel = mapMlLabelToLegacyLevel(mlModelRiskLevel, "SAFE");
+                        feeBaseScore = clampScore((int) Math.round(100 - riskPercent));
+                        appliedFeePercent = mapRiskPercentToFeePercent(riskPercent);
+                        
+                        // 기본 금액은 스냅샷 또는 비즈니스 설정 사용
+                        Double snapshotBaseFee = reservation.getBaseFeeAmountSnapshot();
+                        baseFeeAmount = snapshotBaseFee != null
+                                ? snapshotBaseFee
+                                : (business != null && business.getReservationFeeAmount() != null
+                                    ? business.getReservationFeeAmount().doubleValue()
+                                    : DEFAULT_BASE_AMOUNT_PER_PERSON);
+                        
+                        // 결제 금액 계산
+                        int headCount = reservation.getPeople() != null ? reservation.getPeople() : 1;
+                        double estimatedBaseAmount = baseFeeAmount * headCount;
+                        paidAmount = Math.max(0.0, estimatedBaseAmount * (appliedFeePercent / 100.0));
+                        
+                        log.debug("ML 모델 결과 사용 - 예약ID: {}, ML 레벨: {}, ML 퍼센트: {}%, 위험도 점수: {}, 수수료율: {}%",
+                                reservation.getId(), mlModelRiskLevel, mlModelRiskPercent, feeBaseScore, appliedFeePercent);
+                    } else {
+                        // ML 모델 결과가 없으면 스냅샷 사용 (하지만 이미 필터링되어 있으므로 이 경우는 없어야 함)
+                        Integer snapshotScore = reservation.getRiskScoreSnapshot();
+                        Double snapshotPercent = reservation.getRiskPercentSnapshot();
+                        String snapshotLevel = reservation.getRiskLevelSnapshot();
+                        Double snapshotAppliedFee = reservation.getAppliedFeePercentSnapshot();
+                        Double snapshotBaseFee = reservation.getBaseFeeAmountSnapshot();
+                        Double snapshotPaymentAmount = reservation.getPaymentAmountSnapshot();
 
-                    String riskLevel = snapshotLevel != null
-                            ? snapshotLevel
-                            : riskCalculationService.getRiskLevel(feeBaseScore);
+                        feeBaseScore = snapshotScore != null
+                                ? clampScore(snapshotScore)
+                                : (customer != null && customer.getTrustScore() != null
+                                    ? clampScore(customer.getTrustScore())
+                                    : clampScore(riskCalculationService.calculateRiskScore(customer, reservation)));
+
+                        riskLevel = snapshotLevel != null
+                                ? snapshotLevel
+                                : riskCalculationService.getRiskLevel(feeBaseScore);
+
+                        baseFeeAmount = snapshotBaseFee != null
+                                ? snapshotBaseFee
+                                : (business != null && business.getReservationFeeAmount() != null
+                                    ? business.getReservationFeeAmount().doubleValue()
+                                    : DEFAULT_BASE_AMOUNT_PER_PERSON);
+
+                        riskPercent = snapshotPercent != null
+                                ? snapshotPercent
+                                : calculateRiskPercent(feeBaseScore);
+
+                        appliedFeePercent = snapshotAppliedFee != null
+                                ? snapshotAppliedFee
+                                : mapRiskPercentToFeePercent(riskPercent);
+                        
+                        int headCount = reservation.getPeople() != null ? reservation.getPeople() : 1;
+                        double estimatedBaseAmount = baseFeeAmount * headCount;
+                        double expectedFeeAmount = Math.max(0.0, estimatedBaseAmount * (appliedFeePercent / 100.0));
+                        paidAmount = snapshotPaymentAmount != null ? snapshotPaymentAmount : expectedFeeAmount;
+                        
+                        log.warn("ML 모델 결과 없음, 스냅샷 사용 - 예약ID: {}", reservation.getId());
+                    }
+
                     List<String> patterns = riskCalculationService.analyzeSuspiciousPatterns(customer, reservation);
-
-                    double baseFeeAmount = snapshotBaseFee != null
-                            ? snapshotBaseFee
-                            : (business != null && business.getReservationFeeAmount() != null
-                                ? business.getReservationFeeAmount().doubleValue()
-                                : DEFAULT_BASE_AMOUNT_PER_PERSON);
-
-                    double riskPercent = snapshotPercent != null
-                            ? snapshotPercent
-                            : calculateRiskPercent(feeBaseScore);
-
-                    double appliedFeePercent = snapshotAppliedFee != null
-                            ? snapshotAppliedFee
-                            : mapRiskPercentToFeePercent(riskPercent);
-                    double estimatedBaseAmount = baseFeeAmount * (reservation.getPeople() != null ? reservation.getPeople() : 1);
-                    double expectedFeeAmount = Math.max(0.0, estimatedBaseAmount * (appliedFeePercent / 100.0));
-
-                    // 화면/통계 일관성을 위해 스냅샷 우선 사용
-                    Double paidAmount = snapshotPaymentAmount != null ? snapshotPaymentAmount : expectedFeeAmount;
 
                     // 고객 이력 정보 생성
                     ReservationWithRiskResponse.CustomerRiskData customerData = null;
@@ -614,6 +663,9 @@ public class ReservationService {
                                 ? (int) ChronoUnit.DAYS.between(customer.getCreatedAt().toLocalDate(), LocalDateTime.now().toLocalDate())
                                 : 365;
 
+                        // ⭐ 신뢰점수는 ML 모델 기반 위험도 점수를 사용 (ML 모델이 예약 시점의 위험도를 반영)
+                        int displayTrustScore = feeBaseScore; // ML 모델 기반 위험도 점수를 신뢰점수로 표시
+                        
                         customerData = ReservationWithRiskResponse.CustomerRiskData.builder()
                                 .customerId(customer.getCustomerId())
                                 .name(customer.getName())
@@ -622,9 +674,7 @@ public class ReservationService {
                                 .reservationCount(customer.getReservationCount() != null ? customer.getReservationCount() : 0)
                                 .lastMinuteCancels(0) // 추후 구현
                                 .accountAgeDays(accountAgeDays)
-                                .trustScore(customer.getTrustScore() != null
-                                        ? clampScore(customer.getTrustScore())
-                                        : feeBaseScore)
+                                .trustScore(displayTrustScore) // ML 모델 기반 위험도 점수 사용
                                 .customerGrade(customer.getCustomerGrade())
                                 .build();
                     }

@@ -106,11 +106,26 @@ function NearbyStores() {
   // 카카오 지도 스크립트 로드
   useEffect(() => {
     const kakaoMapKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
+    
+    // 디버깅: 카카오 맵 키 확인
+    console.log("🔍 카카오 맵 키 확인:", kakaoMapKey ? "설정됨" : "❌ 설정되지 않음");
+    
+    if (!kakaoMapKey) {
+      console.error("❌ VITE_KAKAO_MAP_APP_KEY가 설정되지 않았습니다. 빌드 시 환경 변수를 확인하세요.");
+      return;
+    }
+    
     if (!document.getElementById("kakao-map-script")) {
       const script = document.createElement("script");
       script.id = "kakao-map-script";
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapKey}&libraries=services&autoload=false`;
       script.async = true;
+      script.onerror = () => {
+        console.error("❌ 카카오 맵 스크립트 로드 실패. API 키와 도메인 설정을 확인하세요.");
+      };
+      script.onload = () => {
+        console.log("✅ 카카오 맵 스크립트 로드 성공");
+      };
       document.head.appendChild(script);
     }
   }, []);

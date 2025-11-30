@@ -7,7 +7,10 @@ COPY . .
 # 빌드 타임 환경 변수 설정 (Vite가 빌드 타임에 읽음)
 ARG VITE_KAKAO_MAP_APP_KEY
 RUN if [ -n "$VITE_KAKAO_MAP_APP_KEY" ]; then \
-      echo "VITE_KAKAO_MAP_APP_KEY=$VITE_KAKAO_MAP_APP_KEY" > .env; \
+      echo "VITE_KAKAO_MAP_APP_KEY=$VITE_KAKAO_MAP_APP_KEY" > .env && \
+      echo "✅ 카카오 맵 키가 .env 파일에 설정되었습니다."; \
+    else \
+      echo "⚠️  경고: VITE_KAKAO_MAP_APP_KEY가 설정되지 않았습니다."; \
     fi
 RUN npm run build
 
